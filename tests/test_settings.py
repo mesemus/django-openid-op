@@ -1,0 +1,46 @@
+SECRET_KEY = 'fake-key'
+INSTALLED_APPS = [
+    'django.contrib.contenttypes',
+    'django.contrib.auth',
+    'django.contrib.sessions',
+    'social_django',
+    'openid_connect_op',
+    'tests',
+]
+
+ROOT_URLCONF = 'tests.urls'
+USE_TZ = True
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'db.sqlite3',
+    }
+}
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+#
+
+AUTHENTICATION_BACKENDS = (
+    'tests.backends.OpenIdConnectBackend',
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+OPENID_AUTHORIZATION_URL = ''
+OPENID_ACCESS_TOKEN_URL = ''
+OPENID_USER_DETAIL_URL = ''
+OPENID_OIDC_URL = ''
+
+OPENID_CLIENT_MODEL = 'tests.ClientConfig'
+OPENID_USER_CONSENT_VIEW = 'test:consent'
+
+OPENID_CONNECT_OP_AES_KEY = b'1234567890abcdef'
