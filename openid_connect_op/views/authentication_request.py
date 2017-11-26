@@ -1,4 +1,4 @@
-from urllib.parse import parse_qs, splitquery
+from urllib.parse import splitquery
 
 from django.apps import apps
 from django.conf import settings

@@ -137,12 +137,15 @@ class TestAuthenticationRequest:
             'response_type': 'code'
         }))
 
+        self.check_response_contains_code(resp)
+
+    @staticmethod
+    def check_response_contains_code(resp):
         assert resp.status_code == 302
 
         redirect_server, redirect_query = splitquery(resp.url)
         assert redirect_server == 'http://localhost:8000/complete/test/'
         redirect_query = parse_qs(redirect_query)
-
         assert redirect_query['state'] == ['1234']
         assert 'code' in redirect_query
 
@@ -159,6 +162,33 @@ class TestAuthenticationRequest:
             'prompt': 'login'
         }))
         self.check_is_redirect_to_login_page(resp)
+
+    def test_prompt_none_ok(self, client, client_config, user):
+        client.force_login(user)
+        resp = client.get('/authorize/?' + urlencode({
+            'redirect_uri': client_config.redirect_uris,
+            'client_id': 'test',
+            'scope': 'openid',
+            'response_type': 'code',
+            'prompt': 'none'
+        }))
+
+        self.check_response_contains_code(resp)
+
+    def test_prompt_none_failure(self, client, client_config, user):
+        resp = client.get('/authorize/?' + urlencode({
+            'redirect_uri': client_config.redirect_uris,
+            'client_id': 'test',
+            'scope': 'openid',
+            'response_type': 'code',
+            'prompt': 'none'
+        }))
+        assert resp.status_code == 302
+        self.check_query(resp, {
+            'state': ['1234'],
+            'error': ['login_required'],
+            'error_description': ['No prompt requested but user is not logged in']
+        })
 
     def test_require_user_consent(self, client, client_config, user):
         client.force_login(user)

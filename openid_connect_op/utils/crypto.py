@@ -54,7 +54,7 @@ class CryptoTools:
         return ret
 
     @staticmethod
-    def decrypt(message, check_ttl=True, key=None, expected_prefix=b''):
+    def decrypt(message, check_ttl=True, key=None, expected_prefix=b'', zlib_dict=b''):
         """
         Decrypts a message and checks that it has not yet expired
 
@@ -77,7 +77,7 @@ class CryptoTools:
         cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
         message = cipher.decrypt_and_verify(cipher_text, tag)
 
-        do = zlib.decompressobj(wbits=-9)
+        do = zlib.decompressobj(wbits=-9, zdict=zlib_dict)
         message = do.decompress(message) + do.flush()
 
         not_valid_after = message[:8]

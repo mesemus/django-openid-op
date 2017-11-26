@@ -51,6 +51,7 @@ class Parameters:
 
     REQUIRED = ParameterType(required=True)
     OPTIONAL = ParameterType(required=False)
+    ZLIB_DICT = b'openidhttp,,,,'
 
     def __init__(self, param_values):
 
@@ -77,12 +78,13 @@ class Parameters:
             return params
         return CryptoTools.encrypt(params.encode('utf-8'), ttl=ttl,
                                    not_valid_before=not_valid_before, key=key, prefix=prefix,
-                                   zlib_dict=b'none')
+                                   zlib_dict=Parameters.ZLIB_DICT)
 
     @classmethod
     def unpack(cls, packed_data, decrypt=True, key=None, prefix=b''):
         if decrypt:
-            params = CryptoTools.decrypt(packed_data, key=key, expected_prefix=prefix).decode('utf-8')
+            params = CryptoTools.decrypt(packed_data, key=key, expected_prefix=prefix,
+                                         zlib_dict=Parameters.ZLIB_DICT).decode('utf-8')
         else:
             params = packed_data
         params = re.split(r'(?<!\\),', params)
