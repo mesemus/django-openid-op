@@ -32,7 +32,7 @@ class TestAuthenticationRequest:
 
     def test_logged_user(self, client, client_config, user):
         code = self.get_authorization_code(client, client_config, user)
-        resp = client.get('/token/?' + urlencode({
+        resp = client.get('/openid/token?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
             'grant_type': 'authorization_code',
             'code': code,
@@ -68,7 +68,7 @@ class TestAuthenticationRequest:
 
     def get_authorization_code(self, client, client_config, user):
         client.force_login(user)
-        resp = client.get('/authorize/?' + urlencode({
+        resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
             'client_id': 'test',
             'scope': 'openid',
@@ -85,7 +85,7 @@ class TestAuthenticationRequest:
 
     def test_bad_redirect_uri(self, client, client_config, user):
         code = self.get_authorization_code(client, client_config, user)
-        resp = client.get('/token/?' + urlencode({
+        resp = client.get('/openid/token?' + urlencode({
             'redirect_url': 'http://blah',
             'grant_type': 'authorization_code',
             'code': code,
@@ -97,7 +97,7 @@ class TestAuthenticationRequest:
 
     def test_no_grant_type(self, client, client_config, user):
         code = self.get_authorization_code(client, client_config, user)
-        resp = client.get('/token/?' + urlencode({
+        resp = client.get('/openid/token?' + urlencode({
             'redirect_url': 'http://blah',
             'code': code,
         }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
@@ -108,7 +108,7 @@ class TestAuthenticationRequest:
 
     def test_bad_grant_type(self, client, client_config, user):
         code = self.get_authorization_code(client, client_config, user)
-        resp = client.get('/token/?' + urlencode({
+        resp = client.get('/openid/token?' + urlencode({
             'redirect_url': 'http://blah',
             'grant_type': 'bad',
             'code': code,
@@ -121,7 +121,7 @@ class TestAuthenticationRequest:
 
     def test_bad_code(self, client, client_config, user):
         code = self.get_authorization_code(client, client_config, user)
-        resp = client.get('/token/?' + urlencode({
+        resp = client.get('/openid/token?' + urlencode({
             'redirect_url': 'http://blah',
             'grant_type': 'authorization_code',
             'code': '1234',
@@ -133,7 +133,7 @@ class TestAuthenticationRequest:
 
     def test_no_code(self, client, client_config, user):
         code = self.get_authorization_code(client, client_config, user)
-        resp = client.get('/token/?' + urlencode({
+        resp = client.get('/openid/token?' + urlencode({
             'redirect_url': 'http://blah',
             'grant_type': 'authorization_code',
         }),
@@ -145,7 +145,7 @@ class TestAuthenticationRequest:
 
     def test_ok_refresh_user(self, client, client_config, user):
         code = self.get_authorization_code(client, client_config, user)
-        resp = client.get('/token/?' + urlencode({
+        resp = client.get('/openid/token?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
             'grant_type': 'authorization_code',
             'code': code,
@@ -154,7 +154,7 @@ class TestAuthenticationRequest:
         data = json.loads(resp.content.decode('utf-8'))
         refresh_token = data['refresh_token']
 
-        resp = client.get('/token/?' + urlencode({
+        resp = client.get('/openid/token?' + urlencode({
             'grant_type': 'refresh_token',
             'refresh_token': refresh_token,
         }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
@@ -162,7 +162,7 @@ class TestAuthenticationRequest:
 
     def test_refresh_no_token(self, client, client_config, user):
         code = self.get_authorization_code(client, client_config, user)
-        resp = client.get('/token/?' + urlencode({
+        resp = client.get('/openid/token?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
             'grant_type': 'authorization_code',
             'code': code,
@@ -171,7 +171,7 @@ class TestAuthenticationRequest:
         data = json.loads(resp.content.decode('utf-8'))
         refresh_token = data['refresh_token']
 
-        resp = client.get('/token/?' + urlencode({
+        resp = client.get('/openid/token?' + urlencode({
             'grant_type': 'refresh_token',
         }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
 
@@ -184,7 +184,7 @@ class TestAuthenticationRequest:
 
     def test_refresh_expired_token(self, client, client_config, user):
         code = self.get_authorization_code(client, client_config, user)
-        resp = client.get('/token/?' + urlencode({
+        resp = client.get('/openid/token?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
             'grant_type': 'authorization_code',
             'code': code,
@@ -193,7 +193,7 @@ class TestAuthenticationRequest:
         data = json.loads(resp.content.decode('utf-8'))
         refresh_token = data['refresh_token']
         time.sleep(settings.OPENID_DEFAULT_REFRESH_TOKEN_TTL + 1)
-        resp = client.get('/token/?' + urlencode({
+        resp = client.get('/openid/token?' + urlencode({
             'grant_type': 'refresh_token',
             'refresh_token': refresh_token,
         }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))

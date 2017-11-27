@@ -11,14 +11,14 @@ from openid_connect_op.views.parameters import AuthenticationParameters
 @pytest.mark.django_db
 class TestAuthenticationRequest:
     def test_no_redirect_uri_flow(self, client):
-        resp = client.get('/authorize/')
+        resp = client.get('/openid/authorize')
         assert json.loads(resp.content.decode('utf-8')) == {
             "error": "invalid_request_uri",
             "error_description": "Required parameter with name \"redirect_uri\" is not present"}
         assert resp.status_code == 400
 
     def test_no_params_flow(self, client):
-        resp = client.get('/authorize/?' + urlencode({
+        resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': 'http://localhost:8000/complete/test/?state=1234'
         }))
         assert resp.status_code == 302
@@ -35,7 +35,7 @@ class TestAuthenticationRequest:
         assert query == expected
 
     def test_unknown_client_id_flow(self, client):
-        resp = client.get('/authorize/?' + urlencode({
+        resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': 'http://localhost:8000/complete/test/?state=1234',
             'client_id': '1'
         }))
@@ -47,7 +47,7 @@ class TestAuthenticationRequest:
         })
 
     def test_no_response_type(self, client):
-        resp = client.get('/authorize/?' + urlencode({
+        resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': 'http://localhost:8000/complete/test/?state=1234',
             'client_id': '1',
             'scope': 'openid'
@@ -60,7 +60,7 @@ class TestAuthenticationRequest:
         })
 
     def test_unsupported_response_type(self, client):
-        resp = client.get('/authorize/?' + urlencode({
+        resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': 'http://localhost:8000/complete/test/?state=1234',
             'client_id': '1',
             'scope': 'openid',
@@ -75,7 +75,7 @@ class TestAuthenticationRequest:
         })
 
     def test_unknown_client_id(self, client):
-        resp = client.get('/authorize/?' + urlencode({
+        resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': 'http://localhost:8000/complete/test/?state=1234',
             'client_id': 'unknown',
             'scope': 'openid',
@@ -97,7 +97,7 @@ class TestAuthenticationRequest:
         )
 
     def test_redirect_to_login(self, client, client_config):
-        resp = client.get('/authorize/?' + urlencode({
+        resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
             'client_id': 'test',
             'scope': 'openid',
@@ -117,7 +117,7 @@ class TestAuthenticationRequest:
 
         # parse the ?next=... and check that it goes back to the authorize endpoint with ?authp
         next_server, next_query = splitquery(login_query['next'][0])
-        assert next_server == 'http://testserver/authorize/'
+        assert next_server == 'http://testserver/openid/authorize'
         next_query = parse_qs(next_query)
         assert 'authp' in next_query
 
@@ -130,7 +130,7 @@ class TestAuthenticationRequest:
 
     def test_logged_user(self, client, client_config, user):
         client.force_login(user)
-        resp = client.get('/authorize/?' + urlencode({
+        resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
             'client_id': 'test',
             'scope': 'openid',
@@ -154,7 +154,7 @@ class TestAuthenticationRequest:
 
     def test_require_new_login(self, client, client_config, user):
         client.force_login(user)
-        resp = client.get('/authorize/?' + urlencode({
+        resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
             'client_id': 'test',
             'scope': 'openid',
@@ -165,7 +165,7 @@ class TestAuthenticationRequest:
 
     def test_prompt_none_ok(self, client, client_config, user):
         client.force_login(user)
-        resp = client.get('/authorize/?' + urlencode({
+        resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
             'client_id': 'test',
             'scope': 'openid',
@@ -176,7 +176,7 @@ class TestAuthenticationRequest:
         self.check_response_contains_code(resp)
 
     def test_prompt_none_failure(self, client, client_config, user):
-        resp = client.get('/authorize/?' + urlencode({
+        resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
             'client_id': 'test',
             'scope': 'openid',
@@ -192,7 +192,7 @@ class TestAuthenticationRequest:
 
     def test_require_user_consent(self, client, client_config, user):
         client.force_login(user)
-        resp = client.get('/authorize/?' + urlencode({
+        resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
             'client_id': 'test',
             'scope': 'openid',
@@ -213,7 +213,7 @@ class TestAuthenticationRequest:
 
         # parse the ?next=... and check that it goes back to the authorize endpoint with ?authp
         next_server, next_query = splitquery(consent_query['next'][0])
-        assert next_server == 'http://testserver/authorize/'
+        assert next_server == 'http://testserver/openid/authorize'
         next_query = parse_qs(next_query)
         assert 'authp' in next_query
 
