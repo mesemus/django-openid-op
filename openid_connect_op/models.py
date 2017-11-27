@@ -17,7 +17,7 @@ from django.utils.functional import cached_property
 log = logging.getLogger(__file__)
 
 
-class AbstractOpenIDClient(models.Model):
+class OpenIDClient(models.Model):
     """
     An abstract model that implements OpenID client configuration (client = someone who requests access token)
     """
@@ -36,7 +36,7 @@ class AbstractOpenIDClient(models.Model):
     redirect_uris = models.TextField(default='')
 
     CLIENT_AUTH_TYPE_BASIC = 'basic'
-    CLIENT_AUTH_TYPE_POST  = 'post'
+    CLIENT_AUTH_TYPE_POST = 'post'
     CLIENT_AUTH_TYPE_SECRET_JWT = 'sjwt'
     CLIENT_AUTH_TYPE_PRIVATE_KEY_JWT = 'pkjwt'
     CLIENT_AUTH_TYPE_NONE = 'none'
@@ -64,10 +64,8 @@ class AbstractOpenIDClient(models.Model):
         def setter(raw_password):
             self.set_client_password(raw_password)
             self.save(update_fields=["client_hashed_password"])
-        return check_password(raw_password, self.client_hashed_password, setter)
 
-    class Meta:
-        abstract = True
+        return check_password(raw_password, self.client_hashed_password, setter)
 
     def has_user_approval(self, user):
         """
@@ -143,16 +141,18 @@ class AbstractOpenIDClient(models.Model):
         return _base, _query
 
 
-class AbstractTokenStore(models.Model):
+class TokenStore(models.Model):
     """
         Store for issued tokens. Only the hash is stored, not the token itself.
     """
-
+    client = models.ForeignKey(OpenIDClient)
     token_hash = models.CharField(max_length=64, unique=True)
     token_type = models.CharField(max_length=4)
     token_data = jsonfield.JSONField(default={})
     expiration = models.DateTimeField()
-    user       = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    root_token = models.ForeignKey('TokenStore', related_name='related_tokens', on_delete=models.PROTECT,
+                                   null=True, blank=True)
 
     @staticmethod
     def get_token_hash(token):
@@ -162,10 +162,14 @@ class AbstractTokenStore(models.Model):
         :param token:   token
         :return:        sha256 hexdigest
         """
-        return hashlib.sha256(token).hexdigest()
+        return hashlib.sha256(token.encode('ascii')).hexdigest()
+
+    TOKEN_TYPE_ACCESS_BEARER_TOKEN = 'ACCT'
+    TOKEN_TYPE_REFRESH_TOKEN       = 'REFR'
+    TOKEN_TYPE_ID_TOKEN            = 'ID'
 
     @classmethod
-    def create_token(cls, token_type, token_data, ttl, user):
+    def create_token(cls, client, token_type, token_data, ttl, user, root_db_token=None):
         """
         Creates a time-limited token of a given type associated with user
 
@@ -176,20 +180,15 @@ class AbstractTokenStore(models.Model):
         :return:                created token as urlsafe string
         """
         token = secrets.token_urlsafe(64)
-        token_hash = AbstractTokenStore.get_token_hash(token)
-        token_store_model().objects.create(token_hash=token_hash,
-                                           token_type=token_type,
-                                           token_data=token_data,
-                                           expiration=timezone.now() + datetime.timedelta(seconds=ttl),
-                                           user=user)
-        return token
+        token_hash = TokenStore.get_token_hash(token)
+        db_token = TokenStore.objects.create(
+            client=client,
+            token_hash=token_hash,
+            token_type=token_type,
+            token_data=token_data,
+            expiration=timezone.now() + datetime.timedelta(seconds=ttl)
+                            if not isinstance(ttl, datetime.datetime) else ttl,
+            user=user,
+            root_token=root_db_token)
 
-    class Meta:
-        abstract = True
-
-
-@lru_cache(maxsize=1)
-def token_store_model():
-    from django.conf import settings
-    from django.apps import apps
-    return apps.get_model(*settings.OPENID_TOKEN_STORE_MODEL.split('.'))
+        return token, db_token

@@ -28,7 +28,15 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-#
+# OpenID server
+
+OPENID_JWT_PRIVATE_KEY = 'jwt_private.pem'
+OPENID_JWT_PUBLIC_KEY = 'jwt_public.pem'
+OPENID_CONNECT_OP_AES_KEY = b'1234567890abcdef'
+OPENID_USER_CONSENT_VIEW = 'test:consent'
+
+
+# test client
 
 AUTHENTICATION_BACKENDS = (
     'tests.backends.OpenIdConnectBackend',
@@ -39,9 +47,3 @@ OPENID_AUTHORIZATION_URL = ''
 OPENID_ACCESS_TOKEN_URL = ''
 OPENID_USER_DETAIL_URL = ''
 OPENID_OIDC_URL = ''
-
-OPENID_CLIENT_MODEL = 'tests.ClientConfig'
-OPENID_TOKEN_STORE_MODEL = 'tests.TokenStore'
-OPENID_USER_CONSENT_VIEW = 'test:consent'
-
-OPENID_CONNECT_OP_AES_KEY = b'1234567890abcdef'

@@ -104,3 +104,6 @@ ENV/
 db.sqlite3
 
 .envrc
+
+jwt_public.pem
+jwt_private.pem

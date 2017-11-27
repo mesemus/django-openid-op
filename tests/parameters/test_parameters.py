@@ -28,7 +28,7 @@ def test_parameter_parsing():
 
 def test_required_parameter():
     with pytest.raises(AttributeError) as e:
-        p = Params({})
+        Params({})
     assert str(e.value) == 'Required parameter with name "a" is not present'
 
 
@@ -59,4 +59,3 @@ def test_pack_unpack():
     unpacked_p = Params.unpack(packed, prefix=b'TOK', key=b'0123456789ABCDEF')
     assert p == unpacked_p
     assert str(p) == str(unpacked_p)
-

@@ -10,7 +10,7 @@ class AuthenticationParameters(Parameters):
 
         'state': Parameters.OPTIONAL,
         # currently not used at all
-        # 'nonce': Parameters.OPTIONAL,
+        'nonce': Parameters.OPTIONAL,
         'max_age': Parameters.OPTIONAL,
         # currently not used at all
         # 'id_token_hint': Parameters.OPTIONAL,
@@ -24,6 +24,9 @@ class AuthenticationParameters(Parameters):
         # currently not used at all
         # 'ui_locales': ParameterType(required=False, container_type=list),
         # 'acr_values': ParameterType(required=False, container_type=list),
+
+        # extra parameters which are provided by AuthenticationRequestView
+        'username': Parameters.OPTIONAL
     }
 
 

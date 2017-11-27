@@ -1,16 +1,16 @@
 from urllib.parse import splitquery
 
-from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
-from django.http.response import HttpResponseBadRequest, JsonResponse
+from django.http.response import HttpResponseBadRequest
 from django.urls import reverse
 from django.utils.http import urlencode
 from django.views import View
 
-from . import OAuthRequestMixin
+from openid_connect_op.models import OpenIDClient
 from openid_connect_op.views.parameters import AuthenticationParameters
+from . import OAuthRequestMixin
 from .errors import OAuthError
 
 
@@ -34,12 +34,14 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
                 return self.request_user_consent(request, client)
 
             if 'code' in self.request_parameters.response_type:
+                self.request_parameters.username = request.user.username
                 return self.oauth_send_answer(request, {
                     'code': self.request_parameters.pack(ttl=60, prefix=b'AUTH')
                 })
             else:
                 raise OAuthError(error='parameter_not_supported',
-                                 error_description='Only "code" value of the "response_type" is supported by this server')
+                                 error_description='Only "code" value of the "response_type" '
+                                                   'is supported by this server')
 
         except OAuthError as err:
             return self.oauth_send_answer(request, {
@@ -60,8 +62,8 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
 
     def _get_client_or_raise_exception(self):
         try:
-            client = self.openid_client_model.objects.get(client_id=self.request_parameters.client_id)
-        except self.openid_client_model.DoesNotExist:
+            client = OpenIDClient.objects.get(client_id=self.request_parameters.client_id)
+        except OpenIDClient.DoesNotExist:
             raise OAuthError(error='unauthorized_client',
                              error_description='The client is unauthorized to get authentication token')
         if not client.check_redirect_url(self.request_parameters.redirect_uri):

@@ -4,8 +4,8 @@ from urllib.parse import urlencode, parse_qs, splitquery
 import pytest
 from django.contrib.auth.models import User
 
+from openid_connect_op.models import OpenIDClient
 from openid_connect_op.views.parameters import AuthenticationParameters
-from tests.models import ClientConfig
 
 
 @pytest.mark.django_db
@@ -91,7 +91,7 @@ class TestAuthenticationRequest:
     @pytest.fixture()
     def client_config(self):
         redirect_uri = 'http://localhost:8000/complete/test/?state=1234'
-        return ClientConfig.objects.create(
+        return OpenIDClient.objects.create(
             client_id='test',
             redirect_uris=redirect_uri
         )

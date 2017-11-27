@@ -1,6 +1,5 @@
 from urllib.parse import urlencode
 
-from django.apps import apps
 from django.conf import settings
 from django.http import JsonResponse, HttpResponseRedirect
 from django.utils.functional import cached_property
@@ -12,18 +11,20 @@ from openid_connect_op.views.parameters import TokenParameters
 class OAuthRequestMixin:
 
     request_parameters = None
+    use_redirect_uri = True
 
     def oauth_send_answer(self, request, response_params):
         actual_params = {}
         actual_params.update(response_params)
-        if self.request_parameters.state:
-            actual_params['state'] = self.request_parameters.state
+        if self.request_parameters:
             redirect_uri = self.request_parameters.redirect_uri
+            if hasattr(self.request_parameters, 'state') and self.request_parameters.state:
+                actual_params['state'] = self.request_parameters.state
         else:
             redirect_uri = request.GET.get('redirect_uri', None) or request.POST.get('redirect_uri', None)
 
-        if not redirect_uri:
-            return JsonResponse(actual_params, status=400)
+        if not redirect_uri or not self.use_redirect_uri:
+            return JsonResponse(actual_params, status=400 if 'error' in response_params else 200)
 
         if '?' in redirect_uri:
             redirect_uri += '&'
@@ -48,6 +49,3 @@ class OAuthRequestMixin:
         except AttributeError as e:
             raise OAuthError(error='invalid_request_uri', error_description=str(e))
 
-    @cached_property
-    def openid_client_model(self):
-        return apps.get_model(*settings.OPENID_CLIENT_MODEL.split('.'))

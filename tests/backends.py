@@ -1,6 +1,6 @@
 import requests
 from django.conf import settings
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 from social_core.backends.open_id_connect import OpenIdConnectAuth
 from social_core.exceptions import AuthUnreachableProvider
 
@@ -52,4 +52,3 @@ class OpenIdConnectBackend(OpenIdConnectAuth):
 
     def get_user_id(self, details, response):
         return response['details'][self.ID_KEY]
-

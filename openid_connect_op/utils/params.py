@@ -32,7 +32,7 @@ class ParameterType:
             return self.container_type(parameter_value)
 
     def serialize(self, parameter_value):
-        if self.container_type and parameter_value:
+        if self.container_type and parameter_value is not None:
             return ' '.join(parameter_value)
         else:
             return parameter_value
