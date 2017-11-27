@@ -19,6 +19,8 @@ setup(
     install_requires=[
         'Django>=1.11',
         'pycryptodomex',
+        'django-jsonfield',
+        'django-ratelimit'
     ],
     tests_require=[
         'tox',

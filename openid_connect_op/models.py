@@ -1,7 +1,19 @@
+import hashlib
+import json
+import secrets
+from functools import lru_cache
 from urllib.parse import urlparse, splitquery, parse_qs
 
+import datetime
+import jsonfield
+from django.contrib.auth.hashers import get_hasher, check_password
+from django.contrib.auth.models import User
 from django.db import models
 import logging
+
+from django.utils import timezone
+from django.utils.functional import cached_property
+
 log = logging.getLogger(__file__)
 
 
@@ -22,6 +34,37 @@ class AbstractOpenIDClient(models.Model):
     # method.
     #
     redirect_uris = models.TextField(default='')
+
+    CLIENT_AUTH_TYPE_BASIC = 'basic'
+    CLIENT_AUTH_TYPE_POST  = 'post'
+    CLIENT_AUTH_TYPE_SECRET_JWT = 'sjwt'
+    CLIENT_AUTH_TYPE_PRIVATE_KEY_JWT = 'pkjwt'
+    CLIENT_AUTH_TYPE_NONE = 'none'
+
+    client_auth_type = models.CharField(max_length=8, choices=(
+        (CLIENT_AUTH_TYPE_BASIC, 'Basic Authentication'),
+        (CLIENT_AUTH_TYPE_POST, 'Authentication data in POST request'),
+        (CLIENT_AUTH_TYPE_SECRET_JWT, 'JSON Web token with pre-shared secret'),
+        (CLIENT_AUTH_TYPE_PRIVATE_KEY_JWT, 'JSON Web token with public/private key'),
+        (CLIENT_AUTH_TYPE_NONE, 'No client authentication performed'),
+    ))
+
+    client_username = models.CharField(max_length=128)
+    client_hashed_password = models.CharField(max_length=128)
+
+    def set_client_password(self, password):
+        if password is None:
+            raise AttributeError('Password can not be empty')
+        hasher = get_hasher('default')
+        salt = hasher.salt()
+        self.client_hashed_password = hasher.encode(password, salt)
+
+    def check_client_password(self, raw_password):
+        # taken from User
+        def setter(raw_password):
+            self.set_client_password(raw_password)
+            self.save(update_fields=["client_hashed_password"])
+        return check_password(raw_password, self.client_hashed_password, setter)
 
     class Meta:
         abstract = True
@@ -98,3 +141,55 @@ class AbstractOpenIDClient(models.Model):
         if _query:
             _query = parse_qs(_query, keep_blank_values=True)
         return _base, _query
+
+
+class AbstractTokenStore(models.Model):
+    """
+        Store for issued tokens. Only the hash is stored, not the token itself.
+    """
+
+    token_hash = models.CharField(max_length=64, unique=True)
+    token_type = models.CharField(max_length=4)
+    token_data = jsonfield.JSONField(default={})
+    expiration = models.DateTimeField()
+    user       = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    @staticmethod
+    def get_token_hash(token):
+        """
+        Returns a sha256 hash for the given token. The hash is used as token_hash attribute
+
+        :param token:   token
+        :return:        sha256 hexdigest
+        """
+        return hashlib.sha256(token).hexdigest()
+
+    @classmethod
+    def create_token(cls, token_type, token_data, ttl, user):
+        """
+        Creates a time-limited token of a given type associated with user
+
+        :param token_type:      type of the token
+        :param token_data:      extra JSON data associated with the token
+        :param ttl:             ttl in seconds beginning now
+        :param user:            user with whom the token is associated
+        :return:                created token as urlsafe string
+        """
+        token = secrets.token_urlsafe(64)
+        token_hash = AbstractTokenStore.get_token_hash(token)
+        token_store_model().objects.create(token_hash=token_hash,
+                                           token_type=token_type,
+                                           token_data=token_data,
+                                           expiration=timezone.now() + datetime.timedelta(seconds=ttl),
+                                           user=user)
+        return token
+
+    class Meta:
+        abstract = True
+
+
+@lru_cache(maxsize=1)
+def token_store_model():
+    from django.conf import settings
+    from django.apps import apps
+    return apps.get_model(*settings.OPENID_TOKEN_STORE_MODEL.split('.'))

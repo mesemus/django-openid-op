@@ -4,7 +4,7 @@ from urllib.parse import urlencode, parse_qs, splitquery
 import pytest
 from django.contrib.auth.models import User
 
-from openid_connect_op.views.authentication_request import AuthenticationParameters
+from openid_connect_op.views.parameters import AuthenticationParameters
 from tests.models import ClientConfig
 
 

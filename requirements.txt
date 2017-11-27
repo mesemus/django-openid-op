@@ -1,2 +1,4 @@
 Django>=1.11
 pycryptodomex>=2.6.1
+django-jsonfield
+django-ratelimit
