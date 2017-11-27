@@ -12,6 +12,7 @@ class OAuthRequestMixin:
 
     request_parameters = None
     use_redirect_uri = True
+    attribute_parsing_error = 'invalid_request_uri'
 
     def oauth_send_answer(self, request, response_params):
         actual_params = {}
@@ -47,5 +48,5 @@ class OAuthRequestMixin:
             # noinspection PyAttributeOutsideInit
             self.request_parameters = parameters_class(params)
         except AttributeError as e:
-            raise OAuthError(error='invalid_request_uri', error_description=str(e))
+            raise OAuthError(error=self.attribute_parsing_error, error_description=str(e))
 

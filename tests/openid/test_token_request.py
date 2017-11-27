@@ -3,6 +3,8 @@ import json
 from urllib.parse import urlencode, splitquery, parse_qs
 
 import pytest
+import time
+from django.conf import settings
 from django.contrib.auth.models import User
 
 from openid_connect_op.models import OpenIDClient, TokenStore
@@ -34,26 +36,26 @@ class TestAuthenticationRequest:
             'redirect_uri': client_config.redirect_uris,
             'grant_type': 'authorization_code',
             'code': code,
-        }),
-                          HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
-        print(resp.content)
+        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+
+        self.check_token_response(client_config, resp)
+
+    def check_token_response(self, client_config, resp):
         assert resp.status_code == 200
         data = json.loads(resp.content.decode('utf-8'))
         assert 'access_token' in data
         assert data['token_type'] == 'Bearer'
         assert 'refresh_token' in data
-        assert data['expires_in'] == 3600
+        assert data['expires_in'] == settings.OPENID_DEFAULT_ACCESS_TOKEN_TTL
         assert 'id_token' in data
         database_at = TokenStore.objects.get(token_hash=TokenStore.get_token_hash(data['access_token']))
         assert database_at.user.username == 'a'
         assert database_at.client == client_config
         assert database_at.token_type == TokenStore.TOKEN_TYPE_ACCESS_BEARER_TOKEN
-
         database_rt = TokenStore.objects.get(token_hash=TokenStore.get_token_hash(data['refresh_token']))
         assert database_rt.user.username == 'a'
         assert database_rt.client == client_config
         assert database_rt.token_type == TokenStore.TOKEN_TYPE_REFRESH_TOKEN
-
         # validate id token
         header, payload = JWTTools.validate_jwt(data['id_token'])
         assert header['alg'] == 'RS256'
@@ -87,8 +89,7 @@ class TestAuthenticationRequest:
             'redirect_url': 'http://blah',
             'grant_type': 'authorization_code',
             'code': code,
-        }),
-                          HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
         assert resp.status_code == 400
         data = json.loads(resp.content.decode('utf-8'))
         assert data == {'error': 'invalid_request_uri',
@@ -99,11 +100,10 @@ class TestAuthenticationRequest:
         resp = client.get('/token/?' + urlencode({
             'redirect_url': 'http://blah',
             'code': code,
-        }),
-                          HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
         assert resp.status_code == 400
         data = json.loads(resp.content.decode('utf-8'))
-        assert data == {'error': 'invalid_request_uri',
+        assert data == {'error': 'invalid_request',
                         'error_description': 'Required parameter with name "grant_type" is not present'}
 
     def test_bad_grant_type(self, client, client_config, user):
@@ -112,13 +112,12 @@ class TestAuthenticationRequest:
             'redirect_url': 'http://blah',
             'grant_type': 'bad',
             'code': code,
-        }),
-                          HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
         assert resp.status_code == 400
         data = json.loads(resp.content.decode('utf-8'))
-        assert data == {'error': 'invalid_request_uri',
+        assert data == {'error': 'invalid_request',
                         'error_description': 'Value "bad" is not allowed for parameter grant_type. '
-                                             'Allowed values are "authorization_code"'}
+                                             'Allowed values are "authorization_code", "refresh_token"'}
 
     def test_bad_code(self, client, client_config, user):
         code = self.get_authorization_code(client, client_config, user)
@@ -126,8 +125,7 @@ class TestAuthenticationRequest:
             'redirect_url': 'http://blah',
             'grant_type': 'authorization_code',
             'code': '1234',
-        }),
-                          HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
         assert resp.status_code == 400
         data = json.loads(resp.content.decode('utf-8'))
         assert data == {'error': 'unauthorized_client',
@@ -142,6 +140,67 @@ class TestAuthenticationRequest:
                           HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
         assert resp.status_code == 400
         data = json.loads(resp.content.decode('utf-8'))
-        assert data == {'error': 'invalid_request_uri',
+        assert data == {'error': 'invalid_request',
                         'error_description': 'Required parameter with name "code" is not present'}
 
+    def test_ok_refresh_user(self, client, client_config, user):
+        code = self.get_authorization_code(client, client_config, user)
+        resp = client.get('/token/?' + urlencode({
+            'redirect_uri': client_config.redirect_uris,
+            'grant_type': 'authorization_code',
+            'code': code,
+        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+
+        data = json.loads(resp.content.decode('utf-8'))
+        refresh_token = data['refresh_token']
+
+        resp = client.get('/token/?' + urlencode({
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token,
+        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        self.check_token_response(client_config, resp)
+
+    def test_refresh_no_token(self, client, client_config, user):
+        code = self.get_authorization_code(client, client_config, user)
+        resp = client.get('/token/?' + urlencode({
+            'redirect_uri': client_config.redirect_uris,
+            'grant_type': 'authorization_code',
+            'code': code,
+        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+
+        data = json.loads(resp.content.decode('utf-8'))
+        refresh_token = data['refresh_token']
+
+        resp = client.get('/token/?' + urlencode({
+            'grant_type': 'refresh_token',
+        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+
+        assert resp.status_code == 400
+        data = json.loads(resp.content.decode('utf-8'))
+        assert data == {
+            'error': 'invalid_request',
+            'error_description': 'Required parameter with name "refresh_token" is not present'
+        }
+
+    def test_refresh_expired_token(self, client, client_config, user):
+        code = self.get_authorization_code(client, client_config, user)
+        resp = client.get('/token/?' + urlencode({
+            'redirect_uri': client_config.redirect_uris,
+            'grant_type': 'authorization_code',
+            'code': code,
+        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+
+        data = json.loads(resp.content.decode('utf-8'))
+        refresh_token = data['refresh_token']
+        time.sleep(settings.OPENID_DEFAULT_REFRESH_TOKEN_TTL + 1)
+        resp = client.get('/token/?' + urlencode({
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token,
+        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+
+        assert resp.status_code == 400
+        data = json.loads(resp.content.decode('utf-8'))
+        assert data == {
+            'error': 'invalid_grant',
+            'error_description': 'Refresh token expired'
+        }

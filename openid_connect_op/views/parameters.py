@@ -32,11 +32,19 @@ class AuthenticationParameters(Parameters):
 
 class TokenParameters(Parameters):
     parameter_definitions = {
-        'grant_type': ParameterType(required=True, container_type=set, allowed_values={'authorization_code'}),
-        'code': Parameters.REQUIRED,
+        'grant_type': ParameterType(required=True, container_type=set,
+                                    allowed_values={'authorization_code', 'refresh_token'}),
+        # authorization_code
+        'code': Parameters.OPTIONAL, # required for authorization_code
         'redirect_uri': Parameters.OPTIONAL,
+
+        # common for POST credentials instead of basic auth
         'client_id': Parameters.OPTIONAL,
-        'client_secret': Parameters.OPTIONAL
+        'client_secret': Parameters.OPTIONAL,
+
+        # refresh token
+        'refresh_token': Parameters.OPTIONAL,  # required for refresh_token
+        'scope': Parameters.OPTIONAL
     }
 
 

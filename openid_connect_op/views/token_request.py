@@ -1,6 +1,7 @@
 import base64
 import traceback
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import HttpResponseBadRequest
 from django.utils import timezone
@@ -22,6 +23,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
     ratelimit_block = True
     ratelimit_method = 'ALL'
     use_redirect_uri = False
+    attribute_parsing_error = 'invalid_request'
 
     # noinspection PyAttributeOutsideInit
     def dispatch(self, request, *args, **kwargs):
@@ -32,46 +34,15 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         try:
             self.parse_request_parameters(request, TokenParameters)
 
-            try:
-                authentication_parameters = AuthenticationParameters.unpack(
-                    self.request_parameters.code.encode('ascii'), prefix=b'AUTH')
-            except ValueError as e:
-                raise OAuthError(error='unauthorized_client', error_description=str(e))
-
             client = self.authenticate_client(request)
 
-            self.validate_redirect_uri(authentication_parameters)
-
-            db_token_ttl = 3600
-            user = User.objects.get(username=authentication_parameters.username)
-
-            print(authentication_parameters.to_dict())
-            access_token, db_access_token = TokenStore.create_token(
-                client,
-                TokenStore.TOKEN_TYPE_ACCESS_BEARER_TOKEN,
-                authentication_parameters.to_dict(),
-                db_token_ttl,
-                user,
-            )
-
-            refresh_token, refresh_db_token = TokenStore.create_token(
-                client,
-                TokenStore.TOKEN_TYPE_REFRESH_TOKEN,
-                {},
-                3600 * 24,
-                user,
-                root_db_token=db_access_token
-            )
-
-            id_token = self.create_id_token(request, client, authentication_parameters, db_access_token, user)
-
-            return self.oauth_send_answer(request, {
-                'access_token': access_token,
-                'token_type': 'Bearer',
-                'refresh_token': refresh_token,
-                'expires_in': db_token_ttl,
-                'id_token': id_token
-            })
+            if self.request_parameters.grant_type == {'authorization_code'}:
+                return self.process_authorization_code_grant_type(request, client)
+            elif self.request_parameters.grant_type == {'refresh_token'}:
+                return self.process_refresh_token(request, client)
+            else:
+                raise OAuthError(error='invalid_request_uri',
+                                 error_description='Invalid grant type %s' % self.request_parameters.grant_type)
 
         except OAuthError as err:
             return self.oauth_send_answer(request, {
@@ -84,6 +55,68 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
                 'error': 'unknown_error',
                 'error_description': 'Unknown error occurred at %s, check the logs' % timezone.now()
             })
+
+    def process_authorization_code_grant_type(self, request, client):
+
+        if not self.request_parameters.code:
+            raise OAuthError(error='invalid_request',
+                             error_description='Required parameter with name "code" is not present')
+
+        try:
+            authentication_parameters = AuthenticationParameters.unpack(
+                self.request_parameters.code.encode('ascii'), prefix=b'AUTH')
+        except ValueError as e:
+            raise OAuthError(error='unauthorized_client', error_description=str(e))
+
+        self.validate_redirect_uri(authentication_parameters)
+
+        return self.generate_tokens_and_oauth_response(authentication_parameters, client, request)
+
+    def process_refresh_token(self, request, client):
+        if not self.request_parameters.refresh_token:
+            raise OAuthError(error='invalid_request',
+                             error_description='Required parameter with name "refresh_token" is not present')
+        try:
+            refresh_token = TokenStore.objects.get(
+                token_hash=TokenStore.get_token_hash(self.request_parameters.refresh_token))
+            if refresh_token.expiration < timezone.now():
+                raise OAuthError(error='invalid_grant', error_description='Refresh token expired')
+        except TokenStore.DoesNotExist:
+            raise OAuthError(error='invalid_grant', error_description='No such token was found')
+
+        original_access_token = refresh_token.root_token
+        authentication_parameters = AuthenticationParameters(original_access_token.token_data)
+        # noinspection PyTypeChecker
+        return self.generate_tokens_and_oauth_response(authentication_parameters, client, request)
+
+    def generate_tokens_and_oauth_response(self, authentication_parameters, client, request):
+        access_token_ttl = getattr(settings, 'OPENID_DEFAULT_ACCESS_TOKEN_TTL', 3600)
+        refresh_token_ttl = getattr(settings, 'OPENID_DEFAULT_REFRESH_TOKEN_TTL', 3600 * 10)
+        user = User.objects.get(username=authentication_parameters.username)
+
+        access_token, db_access_token = TokenStore.create_token(
+            client,
+            TokenStore.TOKEN_TYPE_ACCESS_BEARER_TOKEN,
+            authentication_parameters.to_dict(),
+            access_token_ttl,
+            user,
+        )
+        refresh_token, refresh_db_token = TokenStore.create_token(
+            client,
+            TokenStore.TOKEN_TYPE_REFRESH_TOKEN,
+            {},
+            refresh_token_ttl,
+            user,
+            root_db_token=db_access_token
+        )
+        id_token = self.create_id_token(request, client, authentication_parameters, db_access_token, user)
+        return self.oauth_send_answer(request, {
+            'access_token': access_token,
+            'token_type': 'Bearer',
+            'refresh_token': refresh_token,
+            'expires_in': access_token_ttl,
+            'id_token': id_token
+        })
 
     def validate_redirect_uri(self, authentication_parameters):
         auth_redirect_uri = authentication_parameters.redirect_uri
