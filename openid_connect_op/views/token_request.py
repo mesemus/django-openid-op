@@ -32,8 +32,11 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         try:
             self.parse_request_parameters(request, TokenParameters)
 
-            authentication_parameters = AuthenticationParameters.unpack(
-                self.request_parameters.code.encode('ascii'), prefix=b'AUTH')
+            try:
+                authentication_parameters = AuthenticationParameters.unpack(
+                    self.request_parameters.code.encode('ascii'), prefix=b'AUTH')
+            except ValueError as e:
+                raise OAuthError(error='unauthorized_client', error_description=str(e))
 
             client = self.authenticate_client(request)
 
@@ -87,7 +90,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         token_redirect_uri = self.request_parameters.redirect_uri
         if auth_redirect_uri and auth_redirect_uri != token_redirect_uri:
             raise OAuthError(error='invalid_request_uri',
-                             error_description='redirect_uri used in authentication but not for token')
+                             error_description='redirect_uri does not match the one used in /authorize endpoint')
         if not auth_redirect_uri and token_redirect_uri:
             raise OAuthError(error='invalid_request_uri',
                              error_description='redirect_uri not used in authentication but passed for token')

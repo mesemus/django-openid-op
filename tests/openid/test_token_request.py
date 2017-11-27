@@ -61,7 +61,7 @@ class TestAuthenticationRequest:
         assert payload['exp'] == int(payload['exp'])
         assert payload['iat'] == int(payload['iat'])
         assert payload['aud'] == ['test']
-        assert payload['sub'] == 'a'            # username
+        assert payload['sub'] == 'a'  # username
         assert payload['iss'] == 'http://testserver/'
 
     def get_authorization_code(self, client, client_config, user):
@@ -80,3 +80,68 @@ class TestAuthenticationRequest:
         assert 'code' in redirect_query
         code = redirect_query['code']
         return code
+
+    def test_bad_redirect_uri(self, client, client_config, user):
+        code = self.get_authorization_code(client, client_config, user)
+        resp = client.get('/token/?' + urlencode({
+            'redirect_url': 'http://blah',
+            'grant_type': 'authorization_code',
+            'code': code,
+        }),
+                          HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        assert resp.status_code == 400
+        data = json.loads(resp.content.decode('utf-8'))
+        assert data == {'error': 'invalid_request_uri',
+                        'error_description': 'redirect_uri does not match the one used in /authorize endpoint'}
+
+    def test_no_grant_type(self, client, client_config, user):
+        code = self.get_authorization_code(client, client_config, user)
+        resp = client.get('/token/?' + urlencode({
+            'redirect_url': 'http://blah',
+            'code': code,
+        }),
+                          HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        assert resp.status_code == 400
+        data = json.loads(resp.content.decode('utf-8'))
+        assert data == {'error': 'invalid_request_uri',
+                        'error_description': 'Required parameter with name "grant_type" is not present'}
+
+    def test_bad_grant_type(self, client, client_config, user):
+        code = self.get_authorization_code(client, client_config, user)
+        resp = client.get('/token/?' + urlencode({
+            'redirect_url': 'http://blah',
+            'grant_type': 'bad',
+            'code': code,
+        }),
+                          HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        assert resp.status_code == 400
+        data = json.loads(resp.content.decode('utf-8'))
+        assert data == {'error': 'invalid_request_uri',
+                        'error_description': 'Value "bad" is not allowed for parameter grant_type. '
+                                             'Allowed values are "authorization_code"'}
+
+    def test_bad_code(self, client, client_config, user):
+        code = self.get_authorization_code(client, client_config, user)
+        resp = client.get('/token/?' + urlencode({
+            'redirect_url': 'http://blah',
+            'grant_type': 'authorization_code',
+            'code': '1234',
+        }),
+                          HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        assert resp.status_code == 400
+        data = json.loads(resp.content.decode('utf-8'))
+        assert data == {'error': 'unauthorized_client',
+                        'error_description': 'MAC check failed'}
+
+    def test_no_code(self, client, client_config, user):
+        code = self.get_authorization_code(client, client_config, user)
+        resp = client.get('/token/?' + urlencode({
+            'redirect_url': 'http://blah',
+            'grant_type': 'authorization_code',
+        }),
+                          HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        assert resp.status_code == 400
+        data = json.loads(resp.content.decode('utf-8'))
+        assert data == {'error': 'invalid_request_uri',
+                        'error_description': 'Required parameter with name "code" is not present'}
+
