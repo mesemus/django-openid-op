@@ -19,6 +19,10 @@ class JWTTools:
         return jwt.verify_jwt(token, JWTTools.load_key(settings.OPENID_JWT_PUBLIC_KEY), ['RS256'])
 
     @staticmethod
+    def get_jwks():
+        return JWTTools.load_key(settings.OPENID_JWT_PUBLIC_KEY).export_public()
+
+    @staticmethod
     @lru_cache(maxsize=8)
     def load_key(path):
         with open(path, 'rb') as f:

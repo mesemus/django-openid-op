@@ -12,7 +12,7 @@ def get_access_token_from_auth_header(auth_header):
     auth_header = auth_header.strip()
     if not auth_header.startswith('Bearer '):
         raise AttributeError('Not a Bearer token')
-    return base64.b64decode(auth_header[7:].encode('ascii')).decode('utf-8')
+    return auth_header[7:]
 
 
 def get_access_token_from_post_data(request):

@@ -40,6 +40,21 @@ class TestTokenRequest:
 
         self.check_token_response(settings, client_config, resp)
 
+    def test_logged_user_post(self, client, client_config, user, settings):
+        # set auth type to POST
+        client_config.client_auth_type = client_config.CLIENT_AUTH_TYPE_POST
+        client_config.save()
+        code = self.get_authorization_code(client, client_config, user)
+        resp = client.post('/openid/token', {
+            'redirect_uri': client_config.redirect_uris,
+            'grant_type': 'authorization_code',
+            'code': code,
+            'client_id': 'test',
+            'client_secret': 'b'
+        })
+
+        self.check_token_response(settings, client_config, resp)
+
     @staticmethod
     def check_token_response(settings, client_config, resp):
         assert resp.status_code == 200

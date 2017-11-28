@@ -38,13 +38,13 @@ class OAuthRequestMixin:
     def parse_request_parameters(self, request, parameters_class):
         try:
             if request.method == 'GET':
-                params = request.GET
+                params = {k:v for k, v in request.GET.items()}
             else:
                 params = {}
                 if request.GET:
-                    params.update(request.GET)
+                    params.update({k:v for k, v in request.GET.items()})
                 if request.POST:
-                    params.update(request.POST)
+                    params.update({k:v for k, v in request.POST.items()})
                 if request.content_type == 'application/json':
                     params.update(json.loads(request.body.decode('utf-8')))
 

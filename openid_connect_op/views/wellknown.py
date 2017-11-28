@@ -8,8 +8,6 @@ class WellKnownView(View):
     defaults = {
         "token_endpoint_auth_methods_supported":
             ["client_secret_basic"],
-        "jwks_uri":
-            "https://server.example.com/jwks.json",
         "scopes_supported": ['openid'] + settings.OPENID_USERINFO_PROVIDERS.supported_scopes,
         "response_types_supported":
             ["code"],
@@ -37,6 +35,8 @@ class WellKnownView(View):
         resp.update(self.extra)
         resp['issuer'] = request.build_absolute_uri('/')
         resp['authorization_endpoint'] = request.build_absolute_uri(reverse('openid_connect_op:authorize'))
-        resp['token_endpoint'] =         request.build_absolute_uri(reverse('openid_connect_op:token'))
+        resp['token_endpoint'] = request.build_absolute_uri(reverse('openid_connect_op:token'))
+        resp['userinfo_endpoint'] = request.build_absolute_uri(reverse('openid_connect_op:userinfo'))
+        resp['jwks_uri'] = request.build_absolute_uri(reverse('openid_connect_op:jwks'))
 
         return JsonResponse(resp)

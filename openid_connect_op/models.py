@@ -142,7 +142,7 @@ class OpenIDToken(models.Model):
     """
         Store for issued tokens. Only the hash is stored, not the token itself.
     """
-    client = models.ForeignKey(OpenIDClient)
+    client = models.ForeignKey(OpenIDClient, on_delete=models.CASCADE)
     token_hash = models.CharField(max_length=64, unique=True)
     token_type = models.CharField(max_length=4)
     token_data = jsonfield.JSONField(default={})

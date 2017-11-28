@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <h1>Hello!</h1>
+    {% if not user.is_anonymous %}
+        <p>
+            Your name is {{ user.first_name }} {{ user.last_name }}, username {{ user.username }}, email {{ user.email }}
+        </p>
+        <p>
+            All the exchanged messages have been logged to stdout in case you want to look at them.
+        </p>
+    {% else %}
+
+        <p>
+            Would you like to <a href="/login/test/?next=/">log in</a>?
+        </p>
+
+        <p>
+            The default username is "test" and password "test" - you can change this in run_sample_server.py
+        </p>
+
+    {% endif %}
+
+
+{% endblock %}
