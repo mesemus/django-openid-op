@@ -31,7 +31,7 @@ Authorization server
 
 This library requires Python 3.6 to work as it depends on ```secrets``` module
 
-1. Set up virtualenv and create the login_server project
+1. Set up virtualenv and create the authorization_server project
 
 TODO: add pip 
 
@@ -45,12 +45,12 @@ virtualenv --python=python3.6 venv-server
 source venv-server/bin/activate
 pip install git+https://github.com/mesemus/django-openid-op.git
 
-django-admin startproject login_server
-(cd login_server; django-admin startapp web)
+django-admin startproject authorization_server
+(cd authorization_server; django-admin startapp web)
 
 ```
 
-2. Edit the ```login_server/login_server/settings.py``` file and append the following lines to the end of the file:
+2. Edit the ```authorization_server/authorization_server/settings.py``` file and append the following lines to the end of the file:
 
 ```python
 
@@ -69,23 +69,23 @@ OPENID_DEFAULT_REFRESH_TOKEN_TTL = 3600 * 24
 APPEND_SLASH = False
 ```
 
-3. Run ```python login_server/manage.py migrate```
+3. Run ```python authorization_server/manage.py migrate```
 
 4. Create keys that will be used to sign tokens:
 
 ```bash
-python login_server/manage.py create_jwt_keys
+python authorization_server/manage.py create_jwt_keys
 ```
 
 The files pointed by ```OPENID_JWT_PRIVATE_KEY``` and ```OPENID_JWT_PUBLIC_KEY``` will be created
 
 5. Check that the server runs so far
 ```bash
-python login_server/manage.py runserver
+python authorization_server/manage.py runserver
 google-chrome http://localhost:8000/
 ```
 
-6. Modify ```login_server/login_server/urls.py```
+6. Modify ```authorization_server/authorization_server/urls.py```
 
 ```python
 # added ", include" here
@@ -116,8 +116,8 @@ and ```http://localhost:8000/openid/jwks``` to check that the step above works.
 
 ```bash
 
-mkdir -p login_server/web/templates/registration
-nano login_server/web/templates/registration/login.html
+mkdir -p authorization_server/web/templates/registration
+nano authorization_server/web/templates/registration/login.html
 ```
 and put there standard logging template from django docs:
 ```html
@@ -159,7 +159,7 @@ and put there standard logging template from django docs:
 8. Create a sample user
 
 ```bash
-python login_server/manage.py createsuperuser
+python authorization_server/manage.py createsuperuser
 Username (leave blank to use 'simeki'): admin
 Email address: admin@example.com
 Password:
@@ -188,10 +188,10 @@ django-admin startproject web_server
 ```
 
 
-2. In the login server's shell, register the newly created web server
+2. In the authorization server's shell, register the newly created web server
 
 ```python
-python login_server/manage.py register_openid_client \
+python authorization_server/manage.py register_openid_client \
       --redirect-url 'http://localhost:9000/complete/openid/' \
       --server-name  'My test server' \
       --auth-type post
@@ -215,7 +215,7 @@ python login_server/manage.py register_openid_client \
         'web'
     ]
 
-    # url where login_server lives
+    # url where authorization_server lives
     OIDC_ENDPOINT = 'http://127.0.0.1:8000'
 
     KEY = 'aaaaaaa'
