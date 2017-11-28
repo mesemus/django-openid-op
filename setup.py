@@ -8,6 +8,10 @@ setup(
     version='0.1',
     packages=[
         'openid_connect_op',
+        'openid_connect_op.management.commands',
+        'openid_connect_op.migrations',
+        'openid_connect_op.utils',
+        'openid_connect_op.views',
     ],
     description='A django database based implementation of a subset of openid protocol, targeted at python3.6 and django 1.11+',
     long_description=README,
