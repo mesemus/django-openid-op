@@ -221,7 +221,7 @@ python login_server/manage.py register_openid_client \
     KEY = 'aaaaaaa'
     SECRET = 'bbbbbb'
 
-    LOGIN_URL = '/django/login/'
+    LOGIN_URL = '/login/openid/'
 
 ```
 
