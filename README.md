@@ -26,6 +26,9 @@ From the OpenID Connect specification the following features are implemented:
 Setting up
 ==========
 
+Logging server
+--------------
+
 This library requires Python 3.6 to work as it depends on ```secrets``` module
 
 1. Set up virtualenv and create the login_server project
@@ -116,7 +119,7 @@ and ```http://localhost:8000/openid/jwks``` to check that the step above works.
 mkdir -p login_server/web/templates/registration
 nano login_server/web/templates/registration/login.html
 ```
-and put there
+and put there standard logging template from django docs:
 ```html
 <html>
   <body>
@@ -151,6 +154,147 @@ and put there
     </form>
   </body>
 </html>
+```
+
+8. Create a sample user
+
+```bash
+python login_server/manage.py createsuperuser
+Username (leave blank to use 'simeki'): admin
+Email address: admin@example.com
+Password:
+Password (again):
+Superuser created successfully.
+```
+
+Try to log in at ```http://localhost:8000/login```.
+
+Congratulations, you have successfully set up an OpenID Connect
+logging server.
+
+Client web server
+-----------------
+
+1. Run in another shell:
+
+```bash
+
+virtualenv --python=python3.6 venv-client
+source venv-client/bin/activate
+pip install django social-auth-app-django
+
+django-admin startproject web_server
+(cd web_server; django-admin startapp web)
+```
+
+
+2. In the login server's shell, register the this web server
+
+```python
+python login_server/manage.py register_openid_client \
+      --redirect-url 'http://localhost:9000/complete/openid/' \
+      --server-name  'My test server'
+
+> Please configure the server with:
+>     Client ID (KEY in settings.py): aaaaaaa
+>     Client Secret (SECRET in settings.py): bbbbbb
+```
+
+3. Edit the ```web_server/web_server/settings.py``` file and append the following lines to the end of the file:
+
+```python
+
+    AUTHENTICATION_BACKENDS = (
+        'web.backends.OpenIdConnect',
+        'django.contrib.auth.backends.ModelBackend',
+    )
+
+    INSTALLED_APPS += [
+        'social_django',
+        'web'
+    ]
+
+    # url where login_server lives
+    OIDC_ENDPOINT = 'http://127.0.0.1:8000'
+
+    KEY = 'aaaaaaa'
+    SECRET = 'bbbbbb'
+
+    LOGIN_URL = '/django/login/'
+
+```
+
+4. Edit ```web_server/web/backends.py```:
+
+```python
+from django.conf import settings
+from social_core.backends.open_id_connect import OpenIdConnectAuth
+
+class OpenIdConnect(OpenIdConnectAuth):
+    OIDC_ENDPOINT = settings.OIDC_ENDPOINT
+    name = 'openid'
+```
+
+5. Create the index page:
+
+```bash
+
+mkdir -p web_server/web/templates
+nano web_server/web/templates/base.html
+```
+
+```html
+<html>
+    <body>
+        {% block content %} {% endblock %}
+    </body>
+</html>
+```
+
+```bash
+nano web_server/web/templates/index.html
+```
+
+```html
+{% extends "base.html" %}
+{% block content %}
+    <h1>Hello!</h1>
+    {% if not user.is_anonymous %}
+        <p>
+            Your name is {{ user.first_name }} {{ user.last_name }}, username {{ user.username }}, email {{ user.email }}
+        </p>
+    {% else %}
+        <p>
+            Would you like to <a href="/login/openid/?next=/">log in</a>?
+        </p>
+    {% endif %}
+{% endblock %}
+```
+
+```bash
+nano web_server/web/views.py
+```
+
+```python
+from django.views.generic import TemplateView
+
+class IndexView(TemplateView):
+    template_name = 'index.html'
+```
+
+```bash
+nano web_server/web_server/urls.py
+```
+
+```python
+from django.conf.urls import url
+from django.contrib import admin
+import web.views
+
+urlpatterns = [
+    url(r'^admin/', admin.site.urls),
+    url(r'^/$', web.views.IndexView.as_view()),
+]
 ```
 
 See docs and API at http://django-openid-op.readthedocs.io/en/latest/
