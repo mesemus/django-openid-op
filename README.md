@@ -43,6 +43,7 @@ source venv-server/bin/activate
 pip install git+https://github.com/mesemus/django-openid-op.git
 
 django-admin startproject login_server
+(cd login_server; django-admin startapp web)
 
 ```
 
@@ -52,6 +53,7 @@ django-admin startproject login_server
 
 INSTALLED_APPS += [
     'openid_connect_op',
+    'web'
 ]
 
 OPENID_JWT_PRIVATE_KEY = 'jwt_private.pem'
@@ -89,8 +91,9 @@ from django.contrib import admin
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    # added this line
+    # added these lines
     url('^', include('openid_connect_op.urls')),
+    url('^', include('django.contrib.auth.urls')),
 ]
 
 ```
@@ -106,5 +109,48 @@ This will create the following urls:
 Start the server and try to point Postman or browser to ```http://localhost:8000/.well-known/openid-configuration```
 and ```http://localhost:8000/openid/jwks``` to check that the step above works.
 
+7. Add login template
+
+```bash
+
+mkdir -p login_server/web/templates/registration
+nano login_server/web/templates/registration/login.html
+```
+and put there
+```html
+<html>
+  <body>
+    {% if form.errors %}
+    <p>Your username and password didn't match. Please try again.</p>
+    {% endif %}
+
+    {% if next %}
+        {% if user.is_authenticated %}
+        <p>Your account doesn't have access to this page. To proceed,
+        please login with an account that has access.</p>
+        {% else %}
+        <p>Please login to see this page.</p>
+        {% endif %}
+    {% endif %}
+
+    <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        <table>
+        <tr>
+            <td>{{ form.username.label_tag }}</td>
+            <td>{{ form.username }}</td>
+        </tr>
+        <tr>
+            <td>{{ form.password.label_tag }}</td>
+            <td>{{ form.password }}</td>
+        </tr>
+        </table>
+
+        <input type="submit" value="login" />
+        <input type="hidden" name="next" value="{{ next }}" />
+    </form>
+  </body>
+</html>
+```
 
 See docs and API at http://django-openid-op.readthedocs.io/en/latest/
