@@ -11,15 +11,15 @@ Under development, please do not use yet.
 # django-openid-op
 
 This django application provides an implementation of OpenID Connect identity server
-(OpenID provider). You can use it, for example, for building centralized logging
+(OpenID provider). You can use it, for example, for building centralized authorization
 server to which clients connect via the OpenID or OAuth2.0 protocol.
 
 This library is compatible with python-social-auth package that can be used
 as an OpenID client to access this server.
 
-From the OpenID Connect specification the following features are implemented:
+The following features of the OpenID Connect specification are implemented:
 
-   * Basic profile from the OpenID Connect Core, including JWKS signing
+   * Basic profile from the OpenID Connect Core, including JWT signing
    * Subset of OpenID Connect Dynamic Registration
    * Subset of OpenID Content Discovery
 
