@@ -147,8 +147,8 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
     def authenticate_with_http_basic(self, auth_header):
         username, password = base64.b64decode(auth_header[6:].strip()).decode('utf-8').split(':', 1)
         try:
-            client = OpenIDClient.objects.get(client_username=username)
-            if not client.check_client_password(password):
+            client = OpenIDClient.objects.get(client_id=username)
+            if not client.check_client_secret(password):
                 raise OAuthError(error='unauthorized_client', error_description='Bad username or password')
 
             if self.request_parameters.client_id and client.client_id != self.request_parameters.client_id:
@@ -174,7 +174,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
                 raise OAuthError(error='invalid_request',
                                  error_description='Client not configured to use POST authentication')
 
-            if client.check_client_password(self.request_parameters.client_secret):
+            if client.check_client_secret(self.request_parameters.client_secret):
                 return client
 
         except OpenIDClient.DoesNotExist:

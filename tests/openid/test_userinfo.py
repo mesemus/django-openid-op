@@ -25,9 +25,8 @@ class TestUserInfo:
             client_id='test',
             redirect_uris=redirect_uri,
             client_auth_type=OpenIDClient.CLIENT_AUTH_TYPE_BASIC,
-            client_username='a'
         )
-        ret.set_client_password('b')
+        ret.set_client_secret('b')
         ret.save()
         return ret
 
@@ -53,7 +52,7 @@ class TestUserInfo:
             'redirect_uri': client_config.redirect_uris,
             'grant_type': 'authorization_code',
             'code': code,
-        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('test:b'.encode('utf-8')).decode('ascii'))
 
         data = json.loads(resp.content.decode('utf-8'))
         return data['access_token']

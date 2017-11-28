@@ -51,3 +51,39 @@ class TokenParameters(Parameters):
     }
 
 
+class DynamicClientRegistrationParameters(Parameters):
+    parameter_definitions = {
+        'redirect_uris': ParameterType(required=True, container_type=list),
+        'response_types': ParameterType(required=False, container_type=set,
+                                    allowed_values={'code', 'token', 'id_token'}),
+        'grant_types': ParameterType(required=False, container_type=set,
+                                    allowed_values={'authorization_code', 'implicit', 'refresh_token'}),
+        'application_type': ParameterType(required=False, container_type=set,
+                                    allowed_values={'web', 'native'}),
+        'contacts': ParameterType(required=False, container_type=set),
+        'client_name': Parameters.OPTIONAL,
+        'logo_uri': Parameters.OPTIONAL,
+        'client_uri': Parameters.OPTIONAL,
+        'policy_uri': Parameters.OPTIONAL,
+        'tos_uri': Parameters.OPTIONAL,         # terms of service
+        'jwks_uri': Parameters.OPTIONAL,
+        'jwks': Parameters.OPTIONAL,
+        'sector_identifier_uri': Parameters.OPTIONAL,
+        'subject_type': Parameters.OPTIONAL,
+        'id_token_signed_response_alg': Parameters.OPTIONAL,
+        'id_token_encrypted_response_alg': Parameters.OPTIONAL,
+        'id_token_encrypted_response_enc': Parameters.OPTIONAL,
+        'userinfo_signed_response_alg': Parameters.OPTIONAL,
+        'userinfo_encrypted_response_alg': Parameters.OPTIONAL,
+        'userinfo_encrypted_response_enc': Parameters.OPTIONAL,
+        'request_object_signing_alg': Parameters.OPTIONAL,
+        'request_object_encryption_alg': Parameters.OPTIONAL,
+        'request_object_encryption_enc': Parameters.OPTIONAL,
+        'token_endpoint_auth_method': Parameters.OPTIONAL,
+        'token_endpoint_auth_signing_alg': Parameters.OPTIONAL,
+        'default_max_age': Parameters.OPTIONAL,
+        'require_auth_time': Parameters.OPTIONAL,
+        'default_acr_values': ParameterType(required=False, container_type=set),
+        'initiate_login_uri': Parameters.OPTIONAL,
+        'request_uris': ParameterType(required=False, container_type=list),
+    }

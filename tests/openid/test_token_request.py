@@ -9,9 +9,11 @@ from django.contrib.auth.models import User
 from openid_connect_op.models import OpenIDClient, OpenIDToken
 from openid_connect_op.utils.jwt import JWTTools
 
+BASIC_AUTH = 'Basic ' + base64.b64encode('test:b'.encode('utf-8')).decode('ascii')
+
 
 @pytest.mark.django_db
-class TestAuthenticationRequest:
+class TestTokenRequest:
     @pytest.fixture
     def user(self):
         return User.objects.create(username='a')
@@ -23,9 +25,8 @@ class TestAuthenticationRequest:
             client_id='test',
             redirect_uris=redirect_uri,
             client_auth_type=OpenIDClient.CLIENT_AUTH_TYPE_BASIC,
-            client_username='a'
         )
-        ret.set_client_password('b')
+        ret.set_client_secret('b')
         ret.save()
         return ret
 
@@ -35,7 +36,7 @@ class TestAuthenticationRequest:
             'redirect_uri': client_config.redirect_uris,
             'grant_type': 'authorization_code',
             'code': code,
-        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
 
         self.check_token_response(settings, client_config, resp)
 
@@ -90,7 +91,7 @@ class TestAuthenticationRequest:
             'redirect_url': 'http://blah',
             'grant_type': 'authorization_code',
             'code': code,
-        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
         assert resp.status_code == 400
         data = json.loads(resp.content.decode('utf-8'))
         assert data == {'error': 'invalid_request_uri',
@@ -101,7 +102,7 @@ class TestAuthenticationRequest:
         resp = client.get('/openid/token?' + urlencode({
             'redirect_url': 'http://blah',
             'code': code,
-        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
         assert resp.status_code == 400
         data = json.loads(resp.content.decode('utf-8'))
         assert data == {'error': 'invalid_request',
@@ -113,7 +114,7 @@ class TestAuthenticationRequest:
             'redirect_url': 'http://blah',
             'grant_type': 'bad',
             'code': code,
-        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
         assert resp.status_code == 400
         data = json.loads(resp.content.decode('utf-8'))
         assert data == {'error': 'invalid_request',
@@ -126,7 +127,7 @@ class TestAuthenticationRequest:
             'redirect_url': 'http://blah',
             'grant_type': 'authorization_code',
             'code': '1234',
-        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
         assert resp.status_code == 400
         data = json.loads(resp.content.decode('utf-8'))
         assert data == {'error': 'unauthorized_client',
@@ -138,7 +139,7 @@ class TestAuthenticationRequest:
             'redirect_url': 'http://blah',
             'grant_type': 'authorization_code',
         }),
-                          HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+                          HTTP_AUTHORIZATION=BASIC_AUTH)
         assert resp.status_code == 400
         data = json.loads(resp.content.decode('utf-8'))
         assert data == {'error': 'invalid_request',
@@ -150,7 +151,7 @@ class TestAuthenticationRequest:
             'redirect_uri': client_config.redirect_uris,
             'grant_type': 'authorization_code',
             'code': code,
-        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
 
         data = json.loads(resp.content.decode('utf-8'))
         refresh_token = data['refresh_token']
@@ -158,7 +159,7 @@ class TestAuthenticationRequest:
         resp = client.get('/openid/token?' + urlencode({
             'grant_type': 'refresh_token',
             'refresh_token': refresh_token,
-        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
         self.check_token_response(settings, client_config, resp)
 
     def test_refresh_no_token(self, client, client_config, user):
@@ -167,14 +168,14 @@ class TestAuthenticationRequest:
             'redirect_uri': client_config.redirect_uris,
             'grant_type': 'authorization_code',
             'code': code,
-        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
 
         data = json.loads(resp.content.decode('utf-8'))
         assert data['refresh_token'] is not None
 
         resp = client.get('/openid/token?' + urlencode({
             'grant_type': 'refresh_token',
-        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
 
         assert resp.status_code == 400
         data = json.loads(resp.content.decode('utf-8'))
@@ -192,7 +193,7 @@ class TestAuthenticationRequest:
             'redirect_uri': client_config.redirect_uris,
             'grant_type': 'authorization_code',
             'code': code,
-        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
 
         data = json.loads(resp.content.decode('utf-8'))
         refresh_token = data['refresh_token']
@@ -200,7 +201,7 @@ class TestAuthenticationRequest:
         resp = client.get('/openid/token?' + urlencode({
             'grant_type': 'refresh_token',
             'refresh_token': refresh_token,
-        }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
 
         assert resp.status_code == 400
         data = json.loads(resp.content.decode('utf-8'))

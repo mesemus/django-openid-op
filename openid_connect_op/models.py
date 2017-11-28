@@ -45,23 +45,24 @@ class OpenIDClient(models.Model):
         (CLIENT_AUTH_TYPE_NONE, 'No client authentication performed'),
     ))
 
-    client_username = models.CharField(max_length=128)
-    client_hashed_password = models.CharField(max_length=128)
+    client_hashed_secret = models.CharField(max_length=128)
 
-    def set_client_password(self, password):
+    client_name = models.CharField(max_length=128)
+
+    def set_client_secret(self, password):
         if password is None:
             raise AttributeError('Password can not be empty')
         hasher = get_hasher('default')
         salt = hasher.salt()
-        self.client_hashed_password = hasher.encode(password, salt)
+        self.client_hashed_secret = hasher.encode(password, salt)
 
-    def check_client_password(self, raw_password):
+    def check_client_secret(self, raw_password):
         # taken from User
         def setter(raw_password):
-            self.set_client_password(raw_password)
+            self.set_client_secret(raw_password)
             self.save(update_fields=["client_hashed_password"])
 
-        return check_password(raw_password, self.client_hashed_password, setter)
+        return check_password(raw_password, self.client_hashed_secret, setter)
 
     def has_user_approval(self, user):
         """
@@ -163,6 +164,7 @@ class OpenIDToken(models.Model):
     TOKEN_TYPE_ACCESS_BEARER_TOKEN = 'ACCT'
     TOKEN_TYPE_REFRESH_TOKEN       = 'REFR'
     TOKEN_TYPE_ID_TOKEN            = 'ID'
+    TOKEN_TYPE_CLIENT_DYNAMIC_REGISTRATION = 'CDR'
 
     @classmethod
     def create_token(cls, client, token_type, token_data, ttl, user, root_db_token=None):

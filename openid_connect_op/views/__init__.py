@@ -1,3 +1,4 @@
+import json
 from urllib.parse import urlencode
 
 from django.conf import settings
@@ -39,12 +40,14 @@ class OAuthRequestMixin:
             if request.method == 'GET':
                 params = request.GET
             else:
+                params = {}
                 if request.GET:
-                    params = {}
                     params.update(request.GET)
+                if request.POST:
                     params.update(request.POST)
-                else:
-                    params = request.POST
+                if request.content_type == 'application/json':
+                    params.update(json.loads(request.body.decode('utf-8')))
+
             # noinspection PyAttributeOutsideInit
             self.request_parameters = parameters_class(params)
         except AttributeError as e:
