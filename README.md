@@ -83,12 +83,13 @@ google-chrome http://localhost:8000/
 6. Modify ```login_server/login_server/urls.py```
 
 ```python
-
-from django.conf.urls import url
+# added ", include" here
+from django.conf.urls import url, include
 from django.contrib import admin
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    # added this line
     url('^', include('openid_connect_op.urls')),
 ]
 
@@ -96,14 +97,14 @@ urlpatterns = [
 
 This will create the following urls:
 
-   * ```/.well-known/openid-configuration``` - URL that returns configuration of this OpenID provider
+   * ```/.well-known/openid-configuration``` - URL that returns configuration of this OpenID provider according to RFC 5785
    * ```/openid/jwks``` - returns the public key that clients may use to validate received information
    * ```/openid/authorize```, ```/openid/token``` - OpenID authorization and token endpoints
    * ```/openid/userinfo``` - OpenID user information endpoint
    * ```/openid/register``` - Dynamic client registration service
 
 Start the server and try to point Postman or browser to ```http://localhost:8000/.well-known/openid-configuration```
-and ```http://localhost:8000/openid/jwks```.
+and ```http://localhost:8000/openid/jwks``` to check that the step above works.
 
 
 See docs and API at http://django-openid-op.readthedocs.io/en/latest/
