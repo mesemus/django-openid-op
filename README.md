@@ -26,8 +26,8 @@ From the OpenID Connect specification the following features are implemented:
 Setting up
 ==========
 
-Logging server
---------------
+Authorization server
+--------------------
 
 This library requires Python 3.6 to work as it depends on ```secrets``` module
 
