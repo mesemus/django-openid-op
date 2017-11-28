@@ -66,4 +66,18 @@ APPEND_SLASH = False
 
 3. Run ```python login_server/manage.py migrate```
 
+4. Create keys that will be used to sign tokens:
+
+```bash
+python login_server/manage.py create_jwt_keys
+```
+
+5. Check that the server runs so far
+```bash
+python login_server/manage.py runserver
+google-chrome http://localhost:8000/
+```
+
+
+
 See docs and API at http://django-openid-op.readthedocs.io/en/latest/
