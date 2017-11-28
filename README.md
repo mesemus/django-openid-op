@@ -170,7 +170,7 @@ Superuser created successfully.
 Try to log in at ```http://localhost:8000/login```.
 
 Congratulations, you have successfully set up an OpenID Connect
-logging server.
+authentication server.
 
 Client web server
 -----------------
@@ -188,14 +188,15 @@ django-admin startproject web_server
 ```
 
 
-2. In the login server's shell, register the this web server
+2. In the login server's shell, register the newly created web server
 
 ```python
 python login_server/manage.py register_openid_client \
       --redirect-url 'http://localhost:9000/complete/openid/' \
-      --server-name  'My test server'
+      --server-name  'My test server' \
+      --auth-type post
 
-> Please configure the server with:
+> Registration successfull, please configure the server with:
 >     Client ID (KEY in settings.py): aaaaaaa
 >     Client Secret (SECRET in settings.py): bbbbbb
 ```
