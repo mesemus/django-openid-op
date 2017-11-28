@@ -13,5 +13,5 @@ class OpenIDConnectOPApp(AppConfig):
 
         if not getattr(settings, 'OPENID_USERINFO_PROVIDERS', None):
             settings.OPENID_USERINFO_PROVIDERS = \
-                UserInfoProviderRegistry(getattr(settings, 'OPENID_SCOPE_PROVIDERS', {}),
+                UserInfoProviderRegistry(getattr(settings, 'OPENID_SCOPE_CLAIMS', {}),
                                          getattr(settings, 'OPENID_CLAIM_PROVIDERS', {}))

@@ -9,15 +9,13 @@ class UserInfoProvider:
     A provider for userinfo claims.
     """
 
-    def get_claims(self, db_access_token, scope_or_claim=None):
+    def get_claims(self, db_access_token):
         """
-        Returns userinfo claims for the given scope or claim name. Note: providers are registered for a scope/claim,
-        so in most cases they do not need to check these scope or claim at runtime.
+        Returns userinfo claims.
 
         This call must be idempotent.
 
-        :param db_access_token:     an instance of OpenIDToken of the user whose userinfo should be returned
-        :param scope_or_claim:      the scope or claim for which we are called
+        :param db_access_token:     an instance of OpenIDToken of the user whose claims should be returned
         :return:                    a dictionary of claims.
         """
         return {}
@@ -43,9 +41,10 @@ class UserInfoProviderRegistry:
     registry of UserInfoProvider instances
     """
 
-    DEFAULT_SCOPE_PROVIDERS = {
-        'profile': ['openid_connect_op.userinfo_providers.DjangoProfileProvider'],
-        'email':   ['openid_connect_op.userinfo_providers.DjangoEmailProvider'],
+    DEFAULT_SCOPE_CLAIMS = {
+        'profile': ['name', 'family_name', 'given_name', 'middle_name', 'nickname', 'preferred_username',
+                    'profile', 'picture', 'website', 'gender', 'birthdate', 'zoneinfo', 'locale', 'updated_at'],
+        'email':   ['email', 'email_verified'],
     }
 
     DEFAULT_CLAIM_PROVIDERS = {
@@ -56,14 +55,16 @@ class UserInfoProviderRegistry:
         'email': ['openid_connect_op.userinfo_providers.DjangoEmailProvider']
     }
 
-    def __init__(self, user_scope_providers, user_claim_providers):
-        self.scope_providers = self._load(user_scope_providers, self.DEFAULT_SCOPE_PROVIDERS)
+    def __init__(self, user_scope_claims, user_claim_providers):
+        self.scope_claims = {}
+        self.scope_claims.update(self.DEFAULT_SCOPE_CLAIMS)
+        self.scope_claims.update(user_scope_claims)
         self.claim_providers = self._load(user_claim_providers, self.DEFAULT_CLAIM_PROVIDERS)
 
     @staticmethod
     def _load(user_handlers, default_handlers):
         ret = defaultdict(list)
-
+        cache = {}
         for name, handler_classes in itertools.chain(user_handlers.items(), default_handlers.items()):
             handler_list = ret[name]
             if not isinstance(handler_classes, list) and not isinstance(handler_classes, tuple):
@@ -71,26 +72,31 @@ class UserInfoProviderRegistry:
                                      'dict(scope_name=list of provider classes), where provider class is '
                                      'either python class or its fully qualified name')
             for clz in handler_classes:
-                if isinstance(clz, str):
-                    clz = import_string(clz)
-                handler_list.append(clz())
+                if clz not in cache:
+                    if isinstance(clz, str):
+                        cache[clz] = import_string(clz)()
+                    else:
+                        cache[clz] = clz()
+                handler_list.append(cache[clz])
 
         return ret
 
     def get_claims(self, db_access_token, scopes, claims):
         claim_values = {}
+        claim_names = set(claims)
         for scope in scopes:
-            if scope in self.scope_providers:
-                for provider in self.scope_providers[scope]:
-                    for claim_name, claim_value in provider.get_claims(db_access_token, scope).items():
-                        # do not overwrite already filled claims, put there only claims with values
-                        if claim_name not in claim_values and claim_value:
-                            claim_values[claim_name] = claim_value
+            claim_names.update(self.scope_claims.get(scope, []))
 
-        for claim in claims:
+        cache = {}
+        for claim in claim_names:
             if claim in self.claim_providers:
                 for provider in self.claim_providers[claim]:
-                    provider_data = provider.get_claims(db_access_token, claim)
+                    if provider not in cache:
+                        provider_data = provider.get_claims(db_access_token, claim)
+                        cache[provider] = provider_data
+                    else:
+                        provider_data = cache[provider]
+
                     if provider_data is not None:
                         if claim not in provider_data:
                             raise ValueError('Provider "%s" registered for claim "%s" has returned different claim!')
