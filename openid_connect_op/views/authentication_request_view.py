@@ -5,8 +5,10 @@ from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
 from django.http.response import HttpResponseBadRequest
 from django.urls import reverse
+from django.utils.decorators import method_decorator
 from django.utils.http import urlencode
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 
 from openid_connect_op.models import OpenIDClient
 from openid_connect_op.views.parameters import AuthenticationParameters
@@ -16,6 +18,7 @@ from .errors import OAuthError
 
 class AuthenticationRequestView(OAuthRequestMixin, View):
     # noinspection PyAttributeOutsideInit
+    @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
         if request.method not in ('GET', 'POST'):
             return HttpResponseBadRequest('Only GET or POST are supported on OpenID endpoint')

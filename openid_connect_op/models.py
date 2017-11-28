@@ -1,18 +1,14 @@
+import datetime
 import hashlib
-import json
+import logging
 import secrets
-from functools import lru_cache
 from urllib.parse import urlparse, splitquery, parse_qs
 
-import datetime
 import jsonfield
 from django.contrib.auth.hashers import get_hasher, check_password
 from django.contrib.auth.models import User
 from django.db import models
-import logging
-
 from django.utils import timezone
-from django.utils.functional import cached_property
 
 log = logging.getLogger(__file__)
 
@@ -141,7 +137,7 @@ class OpenIDClient(models.Model):
         return _base, _query
 
 
-class TokenStore(models.Model):
+class OpenIDToken(models.Model):
     """
         Store for issued tokens. Only the hash is stored, not the token itself.
     """
@@ -151,7 +147,7 @@ class TokenStore(models.Model):
     token_data = jsonfield.JSONField(default={})
     expiration = models.DateTimeField()
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    root_token = models.ForeignKey('TokenStore', related_name='related_tokens', on_delete=models.PROTECT,
+    root_token = models.ForeignKey('openid_connect_op.OpenIDToken', related_name='related_tokens', on_delete=models.PROTECT,
                                    null=True, blank=True)
 
     @staticmethod
@@ -180,8 +176,8 @@ class TokenStore(models.Model):
         :return:                created token as urlsafe string
         """
         token = secrets.token_urlsafe(64)
-        token_hash = TokenStore.get_token_hash(token)
-        db_token = TokenStore.objects.create(
+        token_hash = OpenIDToken.get_token_hash(token)
+        db_token = OpenIDToken.objects.create(
             client=client,
             token_hash=token_hash,
             token_type=token_type,

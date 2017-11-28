@@ -5,7 +5,9 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import HttpResponseBadRequest
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from ratelimit.mixins import RatelimitMixin
 
 from openid_connect_op.models import OpenIDClient
@@ -13,7 +15,7 @@ from openid_connect_op.utils.jwt import JWTTools
 from . import OAuthRequestMixin
 from .errors import OAuthError
 from .parameters import AuthenticationParameters, TokenParameters
-from ..models import TokenStore
+from ..models import OpenIDToken
 
 
 # section 4.1.3 of OAUTH 2.0
@@ -26,6 +28,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
     attribute_parsing_error = 'invalid_request'
 
     # noinspection PyAttributeOutsideInit
+    @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
         if request.method not in ('GET', 'POST'):
             return HttpResponseBadRequest('Only GET or POST are supported on OpenID endpoint')
@@ -77,11 +80,11 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
             raise OAuthError(error='invalid_request',
                              error_description='Required parameter with name "refresh_token" is not present')
         try:
-            refresh_token = TokenStore.objects.get(
-                token_hash=TokenStore.get_token_hash(self.request_parameters.refresh_token))
+            refresh_token = OpenIDToken.objects.get(
+                token_hash=OpenIDToken.get_token_hash(self.request_parameters.refresh_token))
             if refresh_token.expiration < timezone.now():
                 raise OAuthError(error='invalid_grant', error_description='Refresh token expired')
-        except TokenStore.DoesNotExist:
+        except OpenIDToken.DoesNotExist:
             raise OAuthError(error='invalid_grant', error_description='No such token was found')
 
         original_access_token = refresh_token.root_token
@@ -94,16 +97,16 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         refresh_token_ttl = getattr(settings, 'OPENID_DEFAULT_REFRESH_TOKEN_TTL', 3600 * 10)
         user = User.objects.get(username=authentication_parameters.username)
 
-        access_token, db_access_token = TokenStore.create_token(
+        access_token, db_access_token = OpenIDToken.create_token(
             client,
-            TokenStore.TOKEN_TYPE_ACCESS_BEARER_TOKEN,
+            OpenIDToken.TOKEN_TYPE_ACCESS_BEARER_TOKEN,
             authentication_parameters.to_dict(),
             access_token_ttl,
             user,
         )
-        refresh_token, refresh_db_token = TokenStore.create_token(
+        refresh_token, refresh_db_token = OpenIDToken.create_token(
             client,
-            TokenStore.TOKEN_TYPE_REFRESH_TOKEN,
+            OpenIDToken.TOKEN_TYPE_REFRESH_TOKEN,
             {},
             refresh_token_ttl,
             user,
@@ -219,7 +222,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         token = JWTTools.generate_jwt(id_token)
 
         # save the token to the database
-        TokenStore.create_token(client, TokenStore.TOKEN_TYPE_ID_TOKEN, {
+        OpenIDToken.create_token(client, OpenIDToken.TOKEN_TYPE_ID_TOKEN, {
             'token': token
         }, db_access_token.expiration, user, db_access_token)
 

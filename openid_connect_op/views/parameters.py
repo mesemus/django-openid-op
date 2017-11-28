@@ -26,7 +26,10 @@ class AuthenticationParameters(Parameters):
         # 'acr_values': ParameterType(required=False, container_type=list),
 
         # extra parameters which are provided by AuthenticationRequestView
-        'username': Parameters.OPTIONAL
+        'username': Parameters.OPTIONAL,
+
+        # openid claims
+        'claims': ParameterType(required=False, container_type=set),
     }
 
 

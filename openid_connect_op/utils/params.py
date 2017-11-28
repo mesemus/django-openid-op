@@ -19,7 +19,8 @@ class ParameterType:
         if not self.container_type:
             return parameter_value
 
-        parameter_value = parameter_value.split()
+        if not isinstance(parameter_value, list):
+            parameter_value = parameter_value.split()
         if self.allowed_values:
             for val in parameter_value:
                 if val not in self.allowed_values:
@@ -33,7 +34,7 @@ class ParameterType:
 
     def serialize(self, parameter_value):
         if self.container_type and parameter_value is not None:
-            return ' '.join(parameter_value)
+            return list(parameter_value)
         else:
             return parameter_value
 

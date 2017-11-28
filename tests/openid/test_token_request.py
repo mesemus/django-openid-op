@@ -4,10 +4,9 @@ from urllib.parse import urlencode, splitquery, parse_qs
 
 import pytest
 import time
-from django.conf import settings
 from django.contrib.auth.models import User
 
-from openid_connect_op.models import OpenIDClient, TokenStore
+from openid_connect_op.models import OpenIDClient, OpenIDToken
 from openid_connect_op.utils.jwt import JWTTools
 
 
@@ -30,7 +29,7 @@ class TestAuthenticationRequest:
         ret.save()
         return ret
 
-    def test_logged_user(self, client, client_config, user):
+    def test_logged_user(self, client, client_config, user, settings):
         code = self.get_authorization_code(client, client_config, user)
         resp = client.get('/openid/token?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
@@ -38,9 +37,10 @@ class TestAuthenticationRequest:
             'code': code,
         }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
 
-        self.check_token_response(client_config, resp)
+        self.check_token_response(settings, client_config, resp)
 
-    def check_token_response(self, client_config, resp):
+    @staticmethod
+    def check_token_response(settings, client_config, resp):
         assert resp.status_code == 200
         data = json.loads(resp.content.decode('utf-8'))
         assert 'access_token' in data
@@ -48,14 +48,14 @@ class TestAuthenticationRequest:
         assert 'refresh_token' in data
         assert data['expires_in'] == settings.OPENID_DEFAULT_ACCESS_TOKEN_TTL
         assert 'id_token' in data
-        database_at = TokenStore.objects.get(token_hash=TokenStore.get_token_hash(data['access_token']))
+        database_at = OpenIDToken.objects.get(token_hash=OpenIDToken.get_token_hash(data['access_token']))
         assert database_at.user.username == 'a'
         assert database_at.client == client_config
-        assert database_at.token_type == TokenStore.TOKEN_TYPE_ACCESS_BEARER_TOKEN
-        database_rt = TokenStore.objects.get(token_hash=TokenStore.get_token_hash(data['refresh_token']))
+        assert database_at.token_type == OpenIDToken.TOKEN_TYPE_ACCESS_BEARER_TOKEN
+        database_rt = OpenIDToken.objects.get(token_hash=OpenIDToken.get_token_hash(data['refresh_token']))
         assert database_rt.user.username == 'a'
         assert database_rt.client == client_config
-        assert database_rt.token_type == TokenStore.TOKEN_TYPE_REFRESH_TOKEN
+        assert database_rt.token_type == OpenIDToken.TOKEN_TYPE_REFRESH_TOKEN
         # validate id token
         header, payload = JWTTools.validate_jwt(data['id_token'])
         assert header['alg'] == 'RS256'
@@ -66,7 +66,8 @@ class TestAuthenticationRequest:
         assert payload['sub'] == 'a'  # username
         assert payload['iss'] == 'http://testserver/'
 
-    def get_authorization_code(self, client, client_config, user):
+    @staticmethod
+    def get_authorization_code(client, client_config, user):
         client.force_login(user)
         resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
@@ -120,7 +121,7 @@ class TestAuthenticationRequest:
                                              'Allowed values are "authorization_code", "refresh_token"'}
 
     def test_bad_code(self, client, client_config, user):
-        code = self.get_authorization_code(client, client_config, user)
+        self.get_authorization_code(client, client_config, user)
         resp = client.get('/openid/token?' + urlencode({
             'redirect_url': 'http://blah',
             'grant_type': 'authorization_code',
@@ -132,7 +133,7 @@ class TestAuthenticationRequest:
                         'error_description': 'MAC check failed'}
 
     def test_no_code(self, client, client_config, user):
-        code = self.get_authorization_code(client, client_config, user)
+        self.get_authorization_code(client, client_config, user)
         resp = client.get('/openid/token?' + urlencode({
             'redirect_url': 'http://blah',
             'grant_type': 'authorization_code',
@@ -143,7 +144,7 @@ class TestAuthenticationRequest:
         assert data == {'error': 'invalid_request',
                         'error_description': 'Required parameter with name "code" is not present'}
 
-    def test_ok_refresh_user(self, client, client_config, user):
+    def test_ok_refresh_user(self, client, client_config, user, settings):
         code = self.get_authorization_code(client, client_config, user)
         resp = client.get('/openid/token?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
@@ -158,7 +159,7 @@ class TestAuthenticationRequest:
             'grant_type': 'refresh_token',
             'refresh_token': refresh_token,
         }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
-        self.check_token_response(client_config, resp)
+        self.check_token_response(settings, client_config, resp)
 
     def test_refresh_no_token(self, client, client_config, user):
         code = self.get_authorization_code(client, client_config, user)
@@ -169,7 +170,7 @@ class TestAuthenticationRequest:
         }), HTTP_AUTHORIZATION='Basic ' + base64.b64encode('a:b'.encode('utf-8')).decode('ascii'))
 
         data = json.loads(resp.content.decode('utf-8'))
-        refresh_token = data['refresh_token']
+        assert data['refresh_token'] is not None
 
         resp = client.get('/openid/token?' + urlencode({
             'grant_type': 'refresh_token',
@@ -182,7 +183,10 @@ class TestAuthenticationRequest:
             'error_description': 'Required parameter with name "refresh_token" is not present'
         }
 
-    def test_refresh_expired_token(self, client, client_config, user):
+    def test_refresh_expired_token(self, client, client_config, user, settings):
+        settings.OPENID_DEFAULT_ACCESS_TOKEN_TTL = 2
+        settings.OPENID_DEFAULT_REFRESH_TOKEN_TTL = 4
+
         code = self.get_authorization_code(client, client_config, user)
         resp = client.get('/openid/token?' + urlencode({
             'redirect_uri': client_config.redirect_uris,
