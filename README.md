@@ -236,7 +236,7 @@ class OpenIdConnect(OpenIdConnectAuth):
     name = 'openid'
 ```
 
-5. Create the index page:
+5. Create the index page (optionally):
 
 ```bash
 
@@ -296,6 +296,12 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^/$', web.views.IndexView.as_view()),
 ]
+```
+
+6. Start the server and go to the index page or ```http://localhost:9000/login/openid/```
+
+```bash
+python web_server/manage.py runserver localhost:9000
 ```
 
 See docs and API at http://django-openid-op.readthedocs.io/en/latest/
