@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.http.response import JsonResponse
 from django.urls import reverse
 from django.views import View
@@ -9,10 +10,7 @@ class WellKnownView(View):
             ["client_secret_basic"],
         "jwks_uri":
             "https://server.example.com/jwks.json",
-        "scopes_supported":
-            ["openid", "profile", "email", "address",
-             "phone"
-             ],
+        "scopes_supported": ['openid'] + settings.OPENID_USERINFO_PROVIDERS.supported_scopes,
         "response_types_supported":
             ["code"],
         "subject_types_supported":
@@ -25,14 +23,9 @@ class WellKnownView(View):
             ["page"],
         "claim_types_supported":
             ["normal"],
-        "claims_supported":
-            ["sub", "iss", "auth_time", "acr",
-             "name", "given_name", "family_name", "nickname",
-             "profile", "picture", "website",
-             "email"
-             ],
+        "claims_supported": settings.OPENID_USERINFO_PROVIDERS.supported_claims + ['iss', 'auth_time', 'acr'],
         "claims_parameter_supported":
-            True,
+            False,
         "ui_locales_supported":
             ["en-US", "cs-CZ"]
     }

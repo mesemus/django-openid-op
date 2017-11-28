@@ -22,7 +22,10 @@ class UserInfoView(RatelimitMixin, View):
         claims = token_data['claims']
         scopes = token_data['scope']
 
+        scope_param = request.GET.get('scope', request.POST.get('scope', None))
+        if scope_param:
+            scopes = set(scope_param.split()).intersection(set(scopes))
+
         claim_values = settings.OPENID_USERINFO_PROVIDERS.get_claims(request.openid_access_token,
                                                                     scopes, claims)
-        claim_values['sub'] = request.openid_access_token.user.username
         return JsonResponse(claim_values)

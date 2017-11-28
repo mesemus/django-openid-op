@@ -1,6 +1,8 @@
 from collections import defaultdict
 
 import itertools
+
+from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 
 
@@ -48,11 +50,12 @@ class UserInfoProviderRegistry:
     }
 
     DEFAULT_CLAIM_PROVIDERS = {
-        'name': ['openid_connect_op.userinfo_providers.DjangoProfileProvider'],
-        'family_name': ['openid_connect_op.userinfo_providers.DjangoProfileProvider'],
-        'given_name': ['openid_connect_op.userinfo_providers.DjangoProfileProvider'],
+        'name'              : ['openid_connect_op.userinfo_providers.DjangoProfileProvider'],
+        'family_name'       : ['openid_connect_op.userinfo_providers.DjangoProfileProvider'],
+        'given_name'        : ['openid_connect_op.userinfo_providers.DjangoProfileProvider'],
         'preferred_username': ['openid_connect_op.userinfo_providers.DjangoProfileProvider'],
-        'email': ['openid_connect_op.userinfo_providers.DjangoEmailProvider']
+        'email'             : ['openid_connect_op.userinfo_providers.DjangoEmailProvider'],
+        'sub'               : ['openid_connect_op.userinfo_providers.DjangoProfileProvider']
     }
 
     def __init__(self, user_scope_claims, user_claim_providers):
@@ -60,6 +63,14 @@ class UserInfoProviderRegistry:
         self.scope_claims.update(self.DEFAULT_SCOPE_CLAIMS)
         self.scope_claims.update(user_scope_claims)
         self.claim_providers = self._load(user_claim_providers, self.DEFAULT_CLAIM_PROVIDERS)
+
+    @cached_property
+    def supported_scopes(self):
+        return list(sorted(self.scope_claims.keys()))
+
+    @cached_property
+    def supported_claims(self):
+        return list(sorted(self.claim_providers.keys()))
 
     @staticmethod
     def _load(user_handlers, default_handlers):
@@ -84,6 +95,7 @@ class UserInfoProviderRegistry:
     def get_claims(self, db_access_token, scopes, claims):
         claim_values = {}
         claim_names = set(claims)
+        claim_names.add('sub')
         for scope in scopes:
             claim_names.update(self.scope_claims.get(scope, []))
 
@@ -117,6 +129,7 @@ class DjangoProfileProvider(UserInfoProvider):
             'family_name': user.last_name,
             'given_name': user.first_name,
             'preferred_username': user.username,
+            'sub': user.username
             # 'middle_name' not set on django user,
             # 'nickname' not set on django user,
             # 'profile' not set on django user,
