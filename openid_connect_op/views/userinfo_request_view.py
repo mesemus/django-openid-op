@@ -16,7 +16,7 @@ class UserInfoView(RatelimitMixin, View):
     ratelimit_method = 'ALL'
 
     @method_decorator(csrf_exempt)
-    @method_decorator(access_token_required)
+    @method_decorator(access_token_required())
     def dispatch(self, request, *args, **kwargs):
         token_data = request.openid_access_token.token_data
         claims = token_data['claims']

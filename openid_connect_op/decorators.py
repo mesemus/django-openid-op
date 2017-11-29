@@ -1,6 +1,7 @@
 import base64
 from functools import wraps
 
+from django.conf import settings
 from django.http.response import HttpResponseForbidden
 from django.utils import timezone
 from django.utils.decorators import available_attrs
@@ -56,19 +57,24 @@ def extract_access_token(request, forbidden_on_not_present):
         return HttpResponseForbidden('Access error: %s' % e)
 
 
-def access_token_required(func):
-    """
-    Check that access token is present on the request and is valid. If not, returns HttpResponseForbidden.
-    request is annotated with the database access token, i.e. isinstance(req.openid_access_token, OpenIDToken) == True
-    """
-    @wraps(func, assigned=available_attrs(func))
-    def inner(request, *args, **kwargs):
-        db_access_token = extract_access_token(request, True)
-        if isinstance(db_access_token, HttpResponseForbidden):
-            return db_access_token
-        request.openid_access_token = db_access_token
-        return func(request, *args, **kwargs)
-    return inner
-
+def access_token_required(disabled_settings=None):
+    def wrapper(func):
+        """
+        Check that access token is present on the request and is valid. If not, returns HttpResponseForbidden.
+        request is annotated with the database access token, i.e. isinstance(req.openid_access_token, OpenIDToken) == True
+        """
+        @wraps(func, assigned=available_attrs(func))
+        def inner(request, *args, **kwargs):
+            if disabled_settings:
+                if getattr(settings, disabled_settings, False):
+                    request.openid_access_token = None
+                    return func(request, *args, **kwargs)
+            db_access_token = extract_access_token(request, True)
+            if isinstance(db_access_token, HttpResponseForbidden):
+                return db_access_token
+            request.openid_access_token = db_access_token
+            return func(request, *args, **kwargs)
+        return inner
+    return wrapper
 
 __all__ = ('access_token_required', )

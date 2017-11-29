@@ -25,7 +25,7 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
     ratelimit_method = 'ALL'
 
     @method_decorator(csrf_exempt)
-    @method_decorator(access_token_required)
+    @method_decorator(access_token_required(disabled_settings='OPENID_DYNAMIC_CLIENT_REGISTRATION_DISABLE_ACCESS_TOKEN'))
     def dispatch(self, request, *args, **kwargs):
         if request.openid_access_token.token_type != OpenIDToken.TOKEN_TYPE_CLIENT_DYNAMIC_REGISTRATION:
             return HttpResponseForbidden('Can not use this token to access dynamic registration view')
