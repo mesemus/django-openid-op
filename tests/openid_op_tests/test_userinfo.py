@@ -61,7 +61,7 @@ class TestUserInfo:
         access_code = self.get_access_code(client, client_config, user, {}, {})
 
         resp = client.get('/openid/userinfo',
-                          HTTP_AUTHORIZATION='Bearer ' + base64.b64encode(access_code.encode('ascii')).decode('ascii'))
+                          HTTP_AUTHORIZATION='Bearer ' + access_code)
 
         assert resp.status_code == 200
         data = json.loads(resp.content.decode('utf-8'))
@@ -71,7 +71,7 @@ class TestUserInfo:
         access_code = self.get_access_code(client, client_config, user, {'profile'}, {})
 
         resp = client.get('/openid/userinfo',
-                          HTTP_AUTHORIZATION='Bearer ' + base64.b64encode(access_code.encode('ascii')).decode('ascii'))
+                          HTTP_AUTHORIZATION='Bearer ' + access_code)
 
         assert resp.status_code == 200
         data = json.loads(resp.content.decode('utf-8'))
@@ -87,7 +87,7 @@ class TestUserInfo:
         access_code = self.get_access_code(client, client_config, user, {'email'}, {})
 
         resp = client.get('/openid/userinfo',
-                          HTTP_AUTHORIZATION='Bearer ' + base64.b64encode(access_code.encode('ascii')).decode('ascii'))
+                          HTTP_AUTHORIZATION='Bearer ' + access_code)
 
         assert resp.status_code == 200
         data = json.loads(resp.content.decode('utf-8'))
@@ -100,7 +100,7 @@ class TestUserInfo:
         access_code = self.get_access_code(client, client_config, user, {}, {'email'})
 
         resp = client.get('/openid/userinfo',
-                          HTTP_AUTHORIZATION='Bearer ' + base64.b64encode(access_code.encode('ascii')).decode('ascii'))
+                          HTTP_AUTHORIZATION='Bearer ' + access_code)
 
         assert resp.status_code == 200
         data = json.loads(resp.content.decode('utf-8'))
@@ -113,7 +113,7 @@ class TestUserInfo:
         access_code = self.get_access_code(client, client_config, user, {}, {'family_name', 'given_name'})
 
         resp = client.get('/openid/userinfo',
-                          HTTP_AUTHORIZATION='Bearer ' + base64.b64encode(access_code.encode('ascii')).decode('ascii'))
+                          HTTP_AUTHORIZATION='Bearer ' + access_code)
 
         assert resp.status_code == 200
         data = json.loads(resp.content.decode('utf-8'))

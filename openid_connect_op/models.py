@@ -1,7 +1,12 @@
 import datetime
 import hashlib
 import logging
-import secrets
+
+try:
+    import secrets
+except ImportError:
+    import openid_connect_op.utils.secrets_backport as secrets
+
 from urllib.parse import urlparse, splitquery, parse_qs
 
 import jsonfield

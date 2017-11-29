@@ -1,8 +1,10 @@
 # section 4.1.3 of OAUTH 2.0
 import json
-import secrets
+try:
+    import secrets
+except ImportError:
+    import openid_connect_op.utils.secrets_backport as secrets
 
-from django.conf import settings
 from django.http import JsonResponse
 from django.http.response import HttpResponseForbidden, HttpResponseBadRequest
 from django.utils.decorators import method_decorator

@@ -87,4 +87,4 @@ class TestClientRegistrationRequest:
         return User.objects.create(username='a')
 
     def format_auth(self, token):
-        return 'Bearer ' + base64.b64encode(token.encode('utf-8')).decode('ascii')
+        return 'Bearer ' + token
