@@ -47,7 +47,7 @@ cd test
 
 virtualenv --python=python3.6 venv-server
 source venv-server/bin/activate
-pip install git+https://github.com/mesemus/django-openid-op.git
+pip install django-openid-op
 
 django-admin startproject authorization_server
 (cd authorization_server; django-admin startapp web)
