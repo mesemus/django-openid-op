@@ -16,15 +16,6 @@ class OpenIDConnectOPApp(AppConfig):
                 UserInfoProviderRegistry(getattr(settings, 'OPENID_SCOPE_CLAIMS', {}),
                                          getattr(settings, 'OPENID_CLAIM_PROVIDERS', {}))
 
-        if not hasattr(settings, 'OPENID_JWT_PRIVATE_KEY'):
-            settings.OPENID_JWT_PRIVATE_KEY = 'jwt_private.pem'
-
-        if not hasattr(settings, 'OPENID_JWT_PUBLIC_KEY'):
-            settings.OPENID_JWT_PUBLIC_KEY = 'jwt_public.pem'
-
-        if not hasattr(settings, 'OPENID_CONNECT_OP_AES_KEY'):
-            settings.OPENID_CONNECT_OP_AES_KEY = b'1234567890abcdef'
-
         if not hasattr(settings, 'OPENID_USER_CONSENT_VIEW'):
             settings.OPENID_USER_CONSENT_VIEW = 'test:consent'
 
@@ -33,3 +24,9 @@ class OpenIDConnectOPApp(AppConfig):
 
         if not hasattr(settings, 'OPENID_DEFAULT_REFRESH_TOKEN_TTL'):
             settings.OPENID_DEFAULT_REFRESH_TOKEN_TTL = 3600 * 24
+
+        if not hasattr(settings, 'OPENID_CONNECT_OP_DB_ENCRYPT_KEY'):
+            key = settings.SECRET_KEY
+            while len(key)<16:
+                key += key
+            settings.OPENID_CONNECT_OP_DB_ENCRYPT_KEY = key.encode('utf-8')[:16]

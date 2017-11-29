@@ -4,12 +4,18 @@ from urllib.parse import splitquery, parse_qs, urlencode
 
 import pytest
 from django.contrib.auth.models import User
+from django.core.management import call_command
 
 from openid_connect_op.models import OpenIDClient
 
 
 @pytest.mark.django_db
 class TestUserInfo:
+
+    @pytest.fixture(autouse=True)
+    def init_jwk(self):
+        call_command('create_jwt_keys')
+
     @pytest.fixture
     def user(self):
         return User.objects.create(

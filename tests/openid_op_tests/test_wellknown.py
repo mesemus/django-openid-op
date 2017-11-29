@@ -1,10 +1,16 @@
 import json
 
 import pytest
+from django.core.management import call_command
 
 
 @pytest.mark.django_db
 class TestWellKnownURL:
+
+    @pytest.fixture(autouse=True)
+    def init_jwk(self):
+        call_command('create_jwt_keys')
+
     def test_get_wellknown(self, client):
         resp = client.get('/.well-known/openid-configuration')
         assert resp.status_code == 200

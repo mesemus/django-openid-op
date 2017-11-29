@@ -3,13 +3,18 @@ from urllib.parse import urlencode, parse_qs, splitquery
 
 import pytest
 from django.contrib.auth.models import User
+from django.core.management import call_command
 
-from openid_connect_op.models import OpenIDClient
+from openid_connect_op.models import OpenIDClient, OpenIDKey
 from openid_connect_op.views.parameters import AuthenticationParameters
 
 
 @pytest.mark.django_db
 class TestAuthenticationRequest:
+    @pytest.fixture(autouse=True)
+    def init_jwk(self):
+        call_command('create_jwt_keys')
+
     def test_no_redirect_uri_flow(self, client):
         resp = client.get('/openid/authorize')
         assert json.loads(resp.content.decode('utf-8')) == {
@@ -122,7 +127,8 @@ class TestAuthenticationRequest:
         assert 'authp' in next_query
 
         # check that ?authp param contains correctly encrypted value
-        AuthenticationParameters.unpack(next_query['authp'][0].encode('utf-8'))
+        AuthenticationParameters.unpack(next_query['authp'][0].encode('utf-8'),
+                                        key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY))
 
     @pytest.fixture
     def user(self):
@@ -150,7 +156,8 @@ class TestAuthenticationRequest:
         assert 'code' in redirect_query
 
         # check that ?code param contains correctly encrypted value
-        AuthenticationParameters.unpack(redirect_query['code'][0].encode('utf-8'), prefix=b'AUTH')
+        AuthenticationParameters.unpack(redirect_query['code'][0].encode('utf-8'), prefix=b'AUTH',
+                                        key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY))
 
     def test_require_new_login(self, client, client_config, user):
         client.force_login(user)
@@ -218,4 +225,5 @@ class TestAuthenticationRequest:
         assert 'authp' in next_query
 
         # check that ?authp param contains correctly encrypted value
-        AuthenticationParameters.unpack(next_query['authp'][0].encode('utf-8'))
+        AuthenticationParameters.unpack(next_query['authp'][0].encode('utf-8'),
+                                        key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY))

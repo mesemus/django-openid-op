@@ -5,6 +5,7 @@ from urllib.parse import urlencode, splitquery, parse_qs
 import pytest
 import time
 from django.contrib.auth.models import User
+from django.core.management import call_command
 
 from openid_connect_op.models import OpenIDClient, OpenIDToken
 from openid_connect_op.utils.jwt import JWTTools
@@ -14,6 +15,11 @@ BASIC_AUTH = 'Basic ' + base64.b64encode('test:b'.encode('utf-8')).decode('ascii
 
 @pytest.mark.django_db
 class TestTokenRequest:
+
+    @pytest.fixture(autouse=True)
+    def init_jwk(self):
+        call_command('create_jwt_keys')
+
     @pytest.fixture
     def user(self):
         return User.objects.create(username='a')

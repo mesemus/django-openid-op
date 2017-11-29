@@ -2,7 +2,10 @@ import datetime
 import hashlib
 import logging
 
+from django.conf import settings
 from jsonfield.fields import JSONField
+
+from openid_connect_op.utils.crypto import CryptoTools
 
 try:
     import secrets
@@ -29,6 +32,7 @@ class OpenIDClient(models.Model):
     # ID of the client, the client sends this id in the access request
     #
     client_id = models.CharField(max_length=128, unique=True)
+    SELF_CLIENT_ID = '---self---'
 
     #
     # After logging in, browser is redirected to one of these URIs (separated by newline).
@@ -43,6 +47,7 @@ class OpenIDClient(models.Model):
     CLIENT_AUTH_TYPE_SECRET_JWT = 'sjwt'
     CLIENT_AUTH_TYPE_PRIVATE_KEY_JWT = 'pkjwt'
     CLIENT_AUTH_TYPE_NONE = 'none'
+    CLIENT_AUTH_TYPE_INVALID = 'invalid'
 
     client_auth_type = models.CharField(max_length=8, choices=(
         (CLIENT_AUTH_TYPE_BASIC, 'Basic Authentication'),
@@ -55,11 +60,6 @@ class OpenIDClient(models.Model):
     client_hashed_secret = models.CharField(max_length=128)
 
     client_name = models.CharField(max_length=128)
-
-    JWK_PUBLIC_KEY = 'jwk_public'
-    JWK_PRIVATE_KEY = 'jwk_private'
-    AES_KEY = 'aes'
-    keys = JSONField(default={})
 
     def set_client_secret(self, password):
         if password is None:
@@ -149,6 +149,12 @@ class OpenIDClient(models.Model):
             _query = parse_qs(_query, keep_blank_values=True)
         return _base, _query
 
+    @staticmethod
+    def self_instance():
+        return OpenIDClient.objects.get(client_id=OpenIDClient.SELF_CLIENT_ID)
+
+    def get_key(self, key_type):
+        return OpenIDKey.objects.get(client=self, key_type=key_type).key
 
 class OpenIDToken(models.Model):
     """
@@ -202,3 +208,31 @@ class OpenIDToken(models.Model):
             root_token=root_db_token)
 
         return token, db_token
+
+
+class OpenIDKey(models.Model):
+    client = models.ForeignKey(OpenIDClient, on_delete=models.CASCADE)
+
+    JWK_RSA_PUBLIC_KEY = 'jwk_rsa_public'
+    JWK_RSA_PRIVATE_KEY = 'jwk_rsa_private'
+    AES_KEY = 'aes'
+
+    key_type = models.CharField(max_length=16, choices=(
+        (JWK_RSA_PRIVATE_KEY, 'JWK RSA private key'),
+        (JWK_RSA_PUBLIC_KEY, 'JWK RSA public key'),
+        (AES_KEY, 'AES key')
+    ))
+    encrypted_key_value = models.BinaryField()
+
+    @property
+    def key(self):
+        return CryptoTools.decrypt(self.encrypted_key_value,
+                                   key=settings.OPENID_CONNECT_OP_DB_ENCRYPT_KEY)
+
+    @key.setter
+    def key(self, value):
+        self.encrypted_key_value = OpenIDKey.encrypt_key(value)
+
+    @staticmethod
+    def encrypt_key(value):
+        return CryptoTools.encrypt(value, key=settings.OPENID_CONNECT_OP_DB_ENCRYPT_KEY)

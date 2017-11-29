@@ -10,7 +10,7 @@ from django.utils.http import urlencode
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from openid_connect_op.models import OpenIDClient
+from openid_connect_op.models import OpenIDClient, OpenIDKey
 from openid_connect_op.views.parameters import AuthenticationParameters
 from . import OAuthRequestMixin
 from .errors import OAuthError
@@ -39,7 +39,9 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
             if 'code' in self.request_parameters.response_type:
                 self.request_parameters.username = request.user.username
                 return self.oauth_send_answer(request, {
-                    'code': self.request_parameters.pack(ttl=60, prefix=b'AUTH')
+                    'code': self.request_parameters.pack(ttl=60, prefix=b'AUTH',
+                                                         key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY)
+                                                         )
                 })
             else:
                 raise OAuthError(error='parameter_not_supported',
@@ -117,6 +119,6 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
     def get_this_url_with_params(self, request):
         server, query = splitquery(request.build_absolute_uri())
         params = {
-            'authp': self.request_parameters.pack()
+            'authp': self.request_parameters.pack(key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY))
         }
         return server + '?' + urlencode(params)

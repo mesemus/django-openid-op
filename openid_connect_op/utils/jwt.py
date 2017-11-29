@@ -10,21 +10,22 @@ class JWTTools:
 
     @staticmethod
     def generate_jwt(payload):
+        from openid_connect_op.models import OpenIDKey, OpenIDClient
         cipher = getattr(settings, 'OPENID_JWT_CIPHER', 'RS256')
-        return jwt.generate_jwt(payload, JWTTools.load_key(settings.OPENID_JWT_PRIVATE_KEY),
+        return jwt.generate_jwt(payload,
+                                jwk.JWK.from_pem(OpenIDClient.self_instance().get_key(OpenIDKey.JWK_RSA_PRIVATE_KEY)),
                                 cipher)
 
     @staticmethod
     def validate_jwt(token):
-        return jwt.verify_jwt(token, JWTTools.load_key(settings.OPENID_JWT_PUBLIC_KEY), ['RS256'])
+        from openid_connect_op.models import OpenIDKey, OpenIDClient
+        cipher = getattr(settings, 'OPENID_JWT_CIPHER', 'RS256')
+        return jwt.verify_jwt(token,
+                              jwk.JWK.from_pem(OpenIDClient.self_instance().get_key(OpenIDKey.JWK_RSA_PUBLIC_KEY)),
+                              [cipher])
 
     @staticmethod
     def get_jwks():
-        return JWTTools.load_key(settings.OPENID_JWT_PUBLIC_KEY).export_public()
-
-    @staticmethod
-    @lru_cache(maxsize=8)
-    def load_key(path):
-        with open(path, 'rb') as f:
-            return jwk.JWK.from_pem(f.read())
+        from openid_connect_op.models import OpenIDKey, OpenIDClient
+        return jwk.JWK.from_pem(OpenIDClient.self_instance().get_key(OpenIDKey.JWK_RSA_PUBLIC_KEY)).export_public()
 

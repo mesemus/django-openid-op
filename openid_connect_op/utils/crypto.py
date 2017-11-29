@@ -5,7 +5,6 @@ import time
 
 import zlib
 from Cryptodome.Cipher import AES
-from django.conf import settings
 
 
 class CryptoTools:
@@ -42,7 +41,7 @@ class CryptoTools:
         message = co.compress(message) + co.flush()
 
         if key is None:
-            key = settings.OPENID_CONNECT_OP_AES_KEY
+            raise AttributeError('Key can not be None')
         assert len(key) == 16
 
         cipher = AES.new(key, AES.MODE_GCM)
@@ -65,7 +64,7 @@ class CryptoTools:
         :param expected_prefix: the message will be checked against this prefix and if it does not match, an AttributeError will be raised
         """
         if key is None:
-            key = settings.OPENID_CONNECT_OP_AES_KEY
+            raise AttributeError('Key can not be None')
 
         if len(message) % 4 == 2:
             message += b'=='

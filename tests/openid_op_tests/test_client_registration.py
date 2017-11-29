@@ -2,12 +2,17 @@ import json
 
 import pytest
 from django.contrib.auth.models import User
+from django.core.management import call_command
 
 from openid_connect_op.models import OpenIDToken, OpenIDClient
 
 
 @pytest.mark.django_db
 class TestClientRegistrationRequest:
+    @pytest.fixture(autouse=True)
+    def init_jwk(self):
+        call_command('create_jwt_keys')
+
     def test_client_registration_bad_token(self, client):
         resp = client.post(
             '/openid/register',

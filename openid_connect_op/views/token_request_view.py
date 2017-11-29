@@ -10,7 +10,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from ratelimit.mixins import RatelimitMixin
 
-from openid_connect_op.models import OpenIDClient
+from openid_connect_op.models import OpenIDClient, OpenIDKey
 from openid_connect_op.utils.jwt import JWTTools
 from . import OAuthRequestMixin
 from .errors import OAuthError
@@ -67,7 +67,9 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
 
         try:
             authentication_parameters = AuthenticationParameters.unpack(
-                self.request_parameters.code.encode('ascii'), prefix=b'AUTH')
+                self.request_parameters.code.encode('ascii'), prefix=b'AUTH',
+                key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY)
+            )
         except ValueError as e:
             raise OAuthError(error='unauthorized_client', error_description=str(e))
 
