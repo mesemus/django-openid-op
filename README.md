@@ -74,8 +74,6 @@ APPEND_SLASH = False
 python authorization_server/manage.py create_jwt_keys
 ```
 
-The files pointed by ```OPENID_JWT_PRIVATE_KEY``` and ```OPENID_JWT_PUBLIC_KEY``` will be created
-
 5. Check that the server runs so far
 ```bash
 python authorization_server/manage.py runserver
