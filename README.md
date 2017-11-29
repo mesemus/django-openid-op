@@ -62,7 +62,6 @@ INSTALLED_APPS += [
     'openid_connect_op',
     'web'
 ]
-OPENID_CONNECT_OP_AES_KEY = b'1234567890abcdef'
 
 APPEND_SLASH = False
 ```
