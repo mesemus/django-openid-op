@@ -8,7 +8,7 @@ class TestWellKnownURL:
     def test_get_wellknown(self, client):
         resp = client.get('/.well-known/openid-configuration')
         assert resp.status_code == 200
-        data = json.loads(resp.content)
+        data = json.loads(resp.content.decode('utf-8'))
         print(data)
         assert data == {
             'authorization_endpoint': 'http://testserver/openid/authorize',

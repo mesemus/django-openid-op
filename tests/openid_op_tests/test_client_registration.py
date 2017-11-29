@@ -1,10 +1,7 @@
-import base64
 import json
-from urllib.parse import splitquery, parse_qs
 
 import pytest
 from django.contrib.auth.models import User
-from django.utils.http import urlencode
 
 from openid_connect_op.models import OpenIDToken, OpenIDClient
 
@@ -40,7 +37,7 @@ class TestClientRegistrationRequest:
             HTTP_AUTHORIZATION=self.format_auth(token))
 
         assert resp.status_code == 400
-        assert json.loads(resp.content) == {
+        assert json.loads(resp.content.decode('utf-8')) == {
             'error': 'invalid_request_uri',
             'error_description': 'Required parameter with name "redirect_uris" is not present'
         }
@@ -60,7 +57,7 @@ class TestClientRegistrationRequest:
             HTTP_AUTHORIZATION=self.format_auth(token))
 
         assert resp.status_code == 201
-        content = json.loads(resp.content)
+        content = json.loads(resp.content.decode('utf-8'))
         assert 'client_id' in content
         assert 'client_secret' in content
         client_id = content.pop('client_id')

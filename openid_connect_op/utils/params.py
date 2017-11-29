@@ -47,8 +47,14 @@ class ParameterType:
 
 
 class Parameters:
+    """
 
-    parameter_definitions = {}
+    """
+
+    """
+    List of (param_name, ParameterType(...)) 
+    """
+    parameter_definitions = ()
 
     REQUIRED = ParameterType(required=True)
     OPTIONAL = ParameterType(required=False)
@@ -57,19 +63,19 @@ class Parameters:
     def __init__(self, param_values):
 
         if param_values is not None:
-            for parameter_name, parameter_definition in self.parameter_definitions.items():
+            for parameter_name, parameter_definition in self.parameter_definitions:
                 parsed_value = parameter_definition.parse(parameter_name, param_values.get(parameter_name, None))
                 setattr(self, parameter_name, parsed_value)
 
     def to_dict(self):
         return {
             parameter_name: parameter_definition.serialize(getattr(self, parameter_name, None))
-            for parameter_name, parameter_definition in self.parameter_definitions.items()
+            for parameter_name, parameter_definition in self.parameter_definitions
         }
 
     def pack(self, encrypt=True, ttl=None, not_valid_before=None, key=None, prefix=b''):
         arr = []
-        for d in self.parameter_definitions:
+        for d, dev in self.parameter_definitions:
             val = getattr(self, d)
             if isinstance(val, set) or isinstance(val, list) or isinstance(val, tuple):
                 val = ' '.join(val)
@@ -92,7 +98,7 @@ class Parameters:
         param_dict = {}
         for d,p in zip(cls.parameter_definitions, params):
             val = p.replace('\\,', ',').replace('\\\\', '\\')
-            param_dict[d] = val
+            param_dict[d[0]] = val
 
         return cls(param_dict)
 
@@ -101,7 +107,7 @@ class Parameters:
             return False
         if self.parameter_definitions != other.parameter_definitions:
             return False
-        for d in self.parameter_definitions:
+        for d, definition in self.parameter_definitions:
             if getattr(self, d) != getattr(other, d):
                 return False
         return True

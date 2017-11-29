@@ -29,7 +29,9 @@ Setting up
 Authorization server
 --------------------
 
-This library requires Python 3.6 to work as it depends on ```secrets``` module
+This library prefers Python 3.6 to work as it depends on ```secrets``` module.
+If running in python 3.5, a backported version of this module from python 3.6.1 
+is used.
 
 1. Set up virtualenv and create the authorization_server project
 

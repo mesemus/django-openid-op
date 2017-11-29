@@ -4,13 +4,13 @@ from openid_connect_op.utils.params import Parameters, ParameterType
 
 
 class Params(Parameters):
-    parameter_definitions = {
-        'a': Parameters.REQUIRED,
-        'b': Parameters.OPTIONAL,
-        'c': ParameterType(required=False, container_type=set),
-        'd': ParameterType(required=False, container_type=list),
-        'e': ParameterType(required=False, container_type=set, allowed_values=('a', 'b', 'c'))
-    }
+    parameter_definitions = (
+        ('a', Parameters.REQUIRED),
+        ('b', Parameters.OPTIONAL),
+        ('c', ParameterType(required=False, container_type=set)),
+        ('d', ParameterType(required=False, container_type=list)),
+        ('e', ParameterType(required=False, container_type=set, allowed_values=('a', 'b', 'c')))
+    )
 
 
 def test_parameter_parsing():

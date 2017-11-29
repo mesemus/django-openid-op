@@ -10,8 +10,8 @@ urlpatterns = [
     url('', include(
         (
             [
-                url('^openid/consent/(?P<client_id>\d+)/', ConsentView.as_view(), name='consent'),
-                url('^', IndexView.as_view()),
+                url(r'^openid/consent/(?P<client_id>\d+)/', ConsentView.as_view(), name='consent'),
+                url(r'^', IndexView.as_view()),
             ],
             'test'
         ), namespace='test'))
