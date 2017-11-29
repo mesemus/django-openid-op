@@ -60,13 +60,7 @@ INSTALLED_APPS += [
     'openid_connect_op',
     'web'
 ]
-
-OPENID_JWT_PRIVATE_KEY = 'jwt_private.pem'
-OPENID_JWT_PUBLIC_KEY = 'jwt_public.pem'
 OPENID_CONNECT_OP_AES_KEY = b'1234567890abcdef'
-OPENID_USER_CONSENT_VIEW = 'test:consent'
-OPENID_DEFAULT_ACCESS_TOKEN_TTL = 3600
-OPENID_DEFAULT_REFRESH_TOKEN_TTL = 3600 * 24
 
 APPEND_SLASH = False
 ```

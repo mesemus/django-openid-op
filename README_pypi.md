@@ -1,3 +1,3 @@
-# django-openid-idp
+# django-openid-op
 
-See docs and API at http://django-openid-idp.readthedocs.io/en/latest/
+See docs and API at http://django-openid-op.readthedocs.io/en/latest/

@@ -2,6 +2,8 @@ import datetime
 import hashlib
 import logging
 
+from jsonfield.fields import JSONField
+
 try:
     import secrets
 except ImportError:
@@ -53,6 +55,11 @@ class OpenIDClient(models.Model):
     client_hashed_secret = models.CharField(max_length=128)
 
     client_name = models.CharField(max_length=128)
+
+    JWK_PUBLIC_KEY = 'jwk_public'
+    JWK_PRIVATE_KEY = 'jwk_private'
+    AES_KEY = 'aes'
+    keys = JSONField(default={})
 
     def set_client_secret(self, password):
         if password is None:
