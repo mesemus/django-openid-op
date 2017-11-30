@@ -110,3 +110,6 @@ jwt_private.pem
 
 report.html
 stats/
+
+# these should be ignored as the user generates them according to his languages
+openid_connect_op/migrations/0*
