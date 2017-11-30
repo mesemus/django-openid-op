@@ -61,6 +61,9 @@ class OpenIDClient(models.Model):
 
     client_name = models.CharField(max_length=128)
 
+    allowed_scopes = JSONField(null=True, blank=True, verbose_name='List of allowed scopes. If None, all scopes are allowed')
+    allowed_claims = JSONField(null=True, blank=True, verbose_name='List of allowed claims. If None, all claims from allowed scopes are returned')
+
     def set_client_secret(self, password):
         if password is None:
             raise AttributeError('Password can not be empty')
@@ -155,6 +158,7 @@ class OpenIDClient(models.Model):
 
     def get_key(self, key_type):
         return OpenIDKey.objects.get(client=self, key_type=key_type).key
+
 
 class OpenIDToken(models.Model):
     """

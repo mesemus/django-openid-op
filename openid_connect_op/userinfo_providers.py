@@ -1,6 +1,4 @@
 import inspect
-from collections import defaultdict
-
 import itertools
 
 from django.utils.functional import cached_property
@@ -9,10 +7,24 @@ from django.utils.module_loading import import_string
 
 class UserInfoProvider:
     """
-    A provider for userinfo claims.
+    A provider for userinfo claims. To register custom providers, register them in settings file as:
+
+        OPENID_CLAIM_PROVIDERS = ['myapp.openid_providers.MyProvider']
     """
 
     SCOPE_CLAIMS = {}
+    """
+    The scopes and claims that are handled by this userinfo provider. A dictionary of scope names -> list of claims
+    within the scope. For custom scopes/claims consider using fully qualified names to avoid name collisions.
+    
+    Example: 
+        SCOPE_CLAIMS = {
+            'http://myorg.com#idm' : [
+                'http://myorg.com#personal_number',
+                'http://myorg.com#roles',
+            ]
+        }
+    """
 
     def get_claims(self, db_access_token):
         """
@@ -137,7 +149,7 @@ class UserInfoProviderRegistry:
         claim_names.update(self.scope_claims[''])
 
         cache = {}
-        for claim in claim_names:
+        for claim in self._filter_claims(claim_names, db_access_token.client):
             if claim in self.claim_providers:
                 for provider in self.claim_providers[claim]:
                     if provider not in cache:
@@ -155,4 +167,28 @@ class UserInfoProviderRegistry:
                         break
 
         return claim_values
+
+    def _filter_claims(self, claims, client):
+        """filter claims to only those that are allowed for the client"""
+        allowed_claims = client.allowed_claims
+        if allowed_claims is None:
+            allowed_scopes = client.allowed_scopes
+            if allowed_scopes is not None:
+                allowed_claims = set()
+                for scope in allowed_scopes:
+                    if scope in self.scope_claims:
+                        allowed_claims.update(self.scope_claims[scope])
+        else:
+            allowed_claims = set(allowed_claims)
+
+        # always return empty scope as well if claims are restricted
+        if allowed_claims:
+            allowed_claims.update(self.scope_claims[''])
+
+        for claim in claims:
+            if not allowed_claims or claim in allowed_claims:
+                yield claim
+
+
+
 

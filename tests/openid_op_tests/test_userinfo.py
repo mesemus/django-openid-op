@@ -89,6 +89,23 @@ class TestUserInfo:
             'preferred_username': 'a'
         }
 
+    def test_profile_email_scope(self, client, client_config, user):
+        access_code = self.get_access_code(client, client_config, user, {'profile', 'email'}, {})
+
+        resp = client.get('/openid/userinfo',
+                          HTTP_AUTHORIZATION='Bearer ' + access_code)
+
+        assert resp.status_code == 200
+        data = json.loads(resp.content.decode('utf-8'))
+        assert data == {
+            'sub': 'a',
+            'name': 'A B',
+            'family_name': 'B',
+            'given_name': 'A',
+            'preferred_username': 'a',
+            'email': 'a@b.com',
+        }
+
     def test_email_scope(self, client, client_config, user):
         access_code = self.get_access_code(client, client_config, user, {'email'}, {})
 
@@ -127,4 +144,40 @@ class TestUserInfo:
             'sub': 'a',
             'family_name': 'B',
             'given_name': 'A',
+        }
+
+    def test_allowed_claims_via_scope(self, client, client_config, user):
+        client_config.allowed_scopes = ['profile']
+        client_config.save()
+
+        access_code = self.get_access_code(client, client_config, user, {'profile', 'email'}, {})
+
+        resp = client.get('/openid/userinfo',
+                          HTTP_AUTHORIZATION='Bearer ' + access_code)
+
+        assert resp.status_code == 200
+        data = json.loads(resp.content.decode('utf-8'))
+        assert data == {
+            'sub': 'a',
+            'name': 'A B',
+            'family_name': 'B',
+            'given_name': 'A',
+            'preferred_username': 'a'
+        }
+
+
+    def test_allowed_claims_via_name(self, client, client_config, user):
+        client_config.allowed_claims = ['name']
+        client_config.save()
+
+        access_code = self.get_access_code(client, client_config, user, {'profile', 'email'}, {})
+
+        resp = client.get('/openid/userinfo',
+                          HTTP_AUTHORIZATION='Bearer ' + access_code)
+
+        assert resp.status_code == 200
+        data = json.loads(resp.content.decode('utf-8'))
+        assert data == {
+            'sub': 'a',
+            'name': 'A B',
         }
