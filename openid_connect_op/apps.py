@@ -13,8 +13,7 @@ class OpenIDConnectOPApp(AppConfig):
 
         if not getattr(settings, 'OPENID_USERINFO_PROVIDERS', None):
             settings.OPENID_USERINFO_PROVIDERS = \
-                UserInfoProviderRegistry(getattr(settings, 'OPENID_SCOPE_CLAIMS', {}),
-                                         getattr(settings, 'OPENID_CLAIM_PROVIDERS', {}))
+                UserInfoProviderRegistry(getattr(settings, 'OPENID_CLAIM_PROVIDERS', []))
 
         if not hasattr(settings, 'OPENID_USER_CONSENT_VIEW'):
             settings.OPENID_USER_CONSENT_VIEW = 'test:consent'
