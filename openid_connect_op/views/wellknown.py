@@ -39,5 +39,6 @@ class WellKnownView(View):
         resp['userinfo_endpoint'] = request.build_absolute_uri(reverse('openid_connect_op:userinfo'))
         resp['jwks_uri'] = request.build_absolute_uri(reverse('openid_connect_op:jwks'))
         resp['registration_endpoint'] = request.build_absolute_uri(reverse('openid_connect_op:register'))
+        resp['end_session_endpoint'] = request.build_absolute_uri(reverse('openid_connect_op:logout'))
 
         return JsonResponse(resp)
