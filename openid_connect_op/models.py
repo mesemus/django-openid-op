@@ -61,8 +61,12 @@ class OpenIDClient(models.Model):
 
     client_name = models.CharField(max_length=128)
 
-    allowed_scopes = JSONField(null=True, blank=True, verbose_name='List of allowed scopes. If None, all scopes are allowed')
-    allowed_claims = JSONField(null=True, blank=True, verbose_name='List of allowed claims. If None, all claims from allowed scopes are returned')
+    allowed_scopes = JSONField(null=True, blank=True,
+                               verbose_name='List of allowed scopes. If None, all scopes are allowed')
+
+    allowed_claims = JSONField(null=True, blank=True,
+                               verbose_name='List of allowed claims. If None, '
+                                            'all claims from allowed scopes are returned')
 
     def set_client_secret(self, password):
         if password is None:
@@ -160,6 +164,27 @@ class OpenIDClient(models.Model):
         return OpenIDKey.objects.get(client=self, key_type=key_type).key
 
 
+class OpenIDAgreement(models.Model):
+    client = models.ForeignKey(OpenIDClient, on_delete=models.CASCADE)
+    text = models.TextField()
+    obligatory = models.BooleanField()
+
+    allowed_scopes = JSONField(null=True, blank=True,
+                               verbose_name='List of allowed scopes for this agreement.')
+
+    allowed_claims = JSONField(null=True, blank=True,
+                               verbose_name='List of allowed claims for this agreement')
+
+    username_auto_agreement_regexp = models.CharField(null=True, blank=True, max_length=256,
+                                                      verbose_name='Usernames matching this regexp will have this '
+                                                                   'agreement automatically agreed to')
+
+
+class OpenIDUserAgreement(models.Model):
+    agreement = models.ForeignKey(OpenIDAgreement, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+
 class OpenIDToken(models.Model):
     """
         Store for issued tokens. Only the hash is stored, not the token itself.
@@ -242,3 +267,4 @@ class OpenIDKey(models.Model):
     @staticmethod
     def encrypt_key(value):
         return CryptoTools.encrypt(value, key=settings.OPENID_CONNECT_OP_DB_ENCRYPT_KEY)
+

@@ -5,12 +5,14 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.auth',
     'django.contrib.sessions',
+    'modeltranslation',
     'openid_connect_op',
     'tests',
 ]
 
 ROOT_URLCONF = 'tests.urls'
 USE_TZ = True
+USE_I18N = True
 
 DATABASES = {
     'default': {

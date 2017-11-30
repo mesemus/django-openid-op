@@ -1,12 +1,13 @@
 from django.conf.urls import url
+from django.contrib.auth.views import LogoutView
 
 from openid_connect_op.views.logout_request_view import LogoutRequestView
-from .views.authentication_request_view import AuthenticationRequestView
 from .views.dynamic_registration_view import DynamicClientRegistrationView
 from .views.jwks_view import JWKSView
-from .views.token_request_view import TokenRequestView
 from .views.userinfo_request_view import UserInfoView
 from .views.wellknown import WellKnownView
+from .views.authentication_request_view import AuthenticationRequestView
+from .views.token_request_view import TokenRequestView
 
 urlpatterns = [
     url('^openid/authorize', AuthenticationRequestView.as_view(), name='authorize'),

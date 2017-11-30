@@ -53,7 +53,8 @@ setup(
         'pycryptodomex',
         'django-jsonfield',
         'django-ratelimit',
-        'python-jwt'
+        'python-jwt',
+        'django-modeltranslation'
     ],
     tests_require=[
         'tox',

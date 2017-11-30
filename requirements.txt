@@ -3,3 +3,4 @@ pycryptodomex>=2.6.1
 django-jsonfield
 django-ratelimit
 python-jwt
+django-modeltranslation
