@@ -185,17 +185,19 @@ class OpenIDToken(models.Model):
     TOKEN_TYPE_CLIENT_DYNAMIC_REGISTRATION = 'CDR'
 
     @classmethod
-    def create_token(cls, client, token_type, token_data, ttl, user, root_db_token=None):
+    def create_token(cls, client, token_type, token_data, ttl, user, root_db_token=None, token=None):
         """
         Creates a time-limited token of a given type associated with user
 
+        :param client:          for which client is the token created/registered
         :param token_type:      type of the token
         :param token_data:      extra JSON data associated with the token
         :param ttl:             ttl in seconds beginning now
         :param user:            user with whom the token is associated
         :return:                created token as urlsafe string
         """
-        token = secrets.token_urlsafe(64)
+        if not token:
+            token = secrets.token_urlsafe(64)
         token_hash = OpenIDToken.get_token_hash(token)
         db_token = OpenIDToken.objects.create(
             client=client,

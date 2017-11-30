@@ -116,7 +116,7 @@ class TestAuthenticationRequest:
 
         # check that this is a url to the login server and there is a ?next=...
         login_server, login_query = splitquery(resp.url)
-        assert login_server == '/accounts/login/'
+        assert login_server == '/django/login/'
         login_query = parse_qs(login_query)
         assert 'next' in login_query
 

@@ -226,6 +226,6 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         # save the token to the database
         OpenIDToken.create_token(client, OpenIDToken.TOKEN_TYPE_ID_TOKEN, {
             'token': token
-        }, db_access_token.expiration, user, db_access_token)
+        }, db_access_token.expiration, user, db_access_token, token=token)
 
         return token

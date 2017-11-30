@@ -76,4 +76,6 @@ if 'TEST_SERVER_CLIENT' in os.environ:
     KEY = 'openid_test_client_id'
     SECRET = 'openid_test_client_secret'
 
-    LOGIN_URL = '/django/login/'
+
+LOGIN_URL = '/django/login/'
+LOGOUT_URL = '/django/logout/'

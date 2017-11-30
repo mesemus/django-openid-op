@@ -29,7 +29,7 @@ class LogoutRequestView(RatelimitMixin, View):
             return HttpResponseForbidden('Invalid token')
 
         root_token = token.root_token
-        root_token.related_tokens.delete()
+        root_token.related_tokens.all().delete()
         root_token.delete()
 
         # create next uri

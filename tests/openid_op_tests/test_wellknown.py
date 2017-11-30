@@ -32,6 +32,8 @@ class TestWellKnownURL:
             'scopes_supported': ['openid', 'email', 'profile'],
             'subject_types_supported': ['public', 'pairwise'],
             'token_endpoint': 'http://testserver/openid/token',
+            'end_session_endpoint': 'http://testserver/openid/logout',
+            'registration_endpoint': 'http://testserver/openid/register',
             'token_endpoint_auth_methods_supported': ['client_secret_basic'],
             'ui_locales_supported': ['en-US', 'cs-CZ'],
             'userinfo_signing_alg_values_supported': ['RS256'],
