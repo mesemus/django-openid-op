@@ -22,6 +22,8 @@ if __name__ == '__main__':
     # create a sample user
     from django.contrib.auth.models import User
     u = User.objects.update_or_create(username='test',
+                                      is_superuser=True,
+                                      is_staff=True,
                                       defaults=dict(first_name='Johnny',
                                                     last_name='English',
                                                     email='johnny@english.co.uk'))[0]
@@ -35,7 +37,8 @@ if __name__ == '__main__':
     client = OpenIDClient.objects.update_or_create(
         client_id=settings.KEY,
         defaults = dict(redirect_uris=settings.SERVER_URL + '/complete/test/',
-                        client_auth_type=OpenIDClient.CLIENT_AUTH_TYPE_POST)
+                        client_auth_type=OpenIDClient.CLIENT_AUTH_TYPE_POST),
+        client_name='Sample OpenID RP'
     )[0]
 
     client.set_client_secret(settings.SECRET)

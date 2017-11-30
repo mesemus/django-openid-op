@@ -2,7 +2,9 @@ import datetime
 import hashlib
 import logging
 
+import re
 from django.conf import settings
+from django.db.models import Count, Sum
 from jsonfield.fields import JSONField
 
 from openid_connect_op.utils.crypto import CryptoTools
@@ -83,7 +85,7 @@ class OpenIDClient(models.Model):
 
         return check_password(raw_password, self.client_hashed_secret, setter)
 
-    def has_user_approval(self, user):
+    def has_user_agreement(self, user):
         """
         Checks if the user has approved sending his data (including, for example, roles, phone number etc.)
         to this client
@@ -91,7 +93,38 @@ class OpenIDClient(models.Model):
         :param user:    django User
         :return:        True if user has approved sending the data (and client's usage policy), False otherwise
         """
-        return True
+        has_agreement = True
+
+        for agreement in self.get_unsigned_agreements(user, auto_approve=True):
+            if agreement.obligatory:
+                has_agreement = False
+
+        return has_agreement
+
+    def get_unsigned_agreements(self, user, auto_approve=False):
+        """
+        Return all OpenIDAgreements for this client that user has not signed.
+        :param user:            The user to check
+        :param auto_approve:    If True, all approvals that can be signed automatically will be
+        :return:                Generator of OpenIDAgreement
+        """
+        agreements_user_has_not_signed = \
+            self.agreements.annotate(
+                has_me=Sum(
+                    models.Case(
+                        models.When(user_agreements__user=user, then=1),
+                        default=0,
+                        output_field=models.IntegerField()))).filter(has_me=0)
+
+        if not auto_approve:
+            yield from agreements_user_has_not_signed
+
+        for agreement in agreements_user_has_not_signed:
+            # try to auto approve
+            if agreement.can_auto_approve(user.username):
+                OpenIDUserAgreement.objects.create(agreement=agreement, user=user)
+            else:
+                yield agreement
 
     def check_redirect_url(self, _redirect_uri):
         """
@@ -163,9 +196,12 @@ class OpenIDClient(models.Model):
     def get_key(self, key_type):
         return OpenIDKey.objects.get(client=self, key_type=key_type).key
 
+    def __str__(self):
+        return self.client_name
+
 
 class OpenIDAgreement(models.Model):
-    client = models.ForeignKey(OpenIDClient, on_delete=models.CASCADE)
+    client = models.ForeignKey(OpenIDClient, on_delete=models.CASCADE, related_name='agreements')
     text = models.TextField()
     obligatory = models.BooleanField()
 
@@ -179,10 +215,13 @@ class OpenIDAgreement(models.Model):
                                                       verbose_name='Usernames matching this regexp will have this '
                                                                    'agreement automatically agreed to')
 
+    def can_auto_approve(self, username):
+        return self.username_auto_agreement_regexp and re.match(self.username_auto_agreement_regexp, username)
+
 
 class OpenIDUserAgreement(models.Model):
-    agreement = models.ForeignKey(OpenIDAgreement, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    agreement = models.ForeignKey(OpenIDAgreement, on_delete=models.CASCADE, related_name='user_agreements')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_agreements')
 
 
 class OpenIDToken(models.Model):
@@ -195,7 +234,8 @@ class OpenIDToken(models.Model):
     token_data = jsonfield.JSONField(default={})
     expiration = models.DateTimeField()
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    root_token = models.ForeignKey('openid_connect_op.OpenIDToken', related_name='related_tokens', on_delete=models.PROTECT,
+    root_token = models.ForeignKey('openid_connect_op.OpenIDToken', related_name='related_tokens',
+                                   on_delete=models.PROTECT,
                                    null=True, blank=True)
 
     @staticmethod
@@ -209,8 +249,8 @@ class OpenIDToken(models.Model):
         return hashlib.sha256(token.encode('ascii')).hexdigest()
 
     TOKEN_TYPE_ACCESS_BEARER_TOKEN = 'ACCT'
-    TOKEN_TYPE_REFRESH_TOKEN       = 'REFR'
-    TOKEN_TYPE_ID_TOKEN            = 'ID'
+    TOKEN_TYPE_REFRESH_TOKEN = 'REFR'
+    TOKEN_TYPE_ID_TOKEN = 'ID'
     TOKEN_TYPE_CLIENT_DYNAMIC_REGISTRATION = 'CDR'
 
     @classmethod
@@ -234,7 +274,7 @@ class OpenIDToken(models.Model):
             token_type=token_type,
             token_data=token_data,
             expiration=timezone.now() + datetime.timedelta(seconds=ttl)
-                            if not isinstance(ttl, datetime.datetime) else ttl,
+            if not isinstance(ttl, datetime.datetime) else ttl,
             user=user,
             root_token=root_db_token)
 
@@ -267,4 +307,3 @@ class OpenIDKey(models.Model):
     @staticmethod
     def encrypt_key(value):
         return CryptoTools.encrypt(value, key=settings.OPENID_CONNECT_OP_DB_ENCRYPT_KEY)
-

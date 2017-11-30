@@ -1,8 +1,9 @@
 from django.conf.urls import include, url
+from django.contrib import admin
 
 from tests.views import ConsentView, IndexView
-
 urlpatterns = [
+    url('^admin/', include(admin.site.urls)),
     url('^django/', include('django.contrib.auth.urls')),
     url('^', include('openid_connect_op.urls')),
     url('', include('social_django.urls', namespace='social')),
@@ -11,7 +12,7 @@ urlpatterns = [
         (
             [
                 url(r'^openid/consent/(?P<client_id>\d+)/', ConsentView.as_view(), name='consent'),
-                url(r'^', IndexView.as_view()),
+                url(r'^$', IndexView.as_view()),
             ],
             'test'
         ), namespace='test'))

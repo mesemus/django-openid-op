@@ -55,7 +55,7 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
             })
 
     def should_request_user_consent(self, request, client):
-        return not client.has_user_approval(request.user) or 'consent' in self.request_parameters.prompt
+        return not client.has_user_agreement(request.user) or 'consent' in self.request_parameters.prompt
 
     def should_login(self, request):
         if request.user.is_anonymous or 'login' in self.request_parameters.prompt:

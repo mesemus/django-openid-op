@@ -4,8 +4,10 @@ SECRET_KEY = 'fake-key'
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.auth',
-    'django.contrib.sessions',
     'modeltranslation',
+    'django.contrib.admin',
+    'django.contrib.sessions',
+    'django.contrib.staticfiles',
     'openid_connect_op',
     'tests',
 ]
@@ -33,6 +35,8 @@ MIDDLEWARE = [
 ]
 
 DEBUG = True
+
+STATIC_URL = '/static/'
 
 # OpenID server
 
@@ -81,3 +85,8 @@ if 'TEST_SERVER_CLIENT' in os.environ:
 
 LOGIN_URL = '/django/login/'
 LOGOUT_URL = '/django/logout/'
+
+LANGUAGES = (
+    ('en', 'English'),
+    ('cs', 'Czech')
+)
