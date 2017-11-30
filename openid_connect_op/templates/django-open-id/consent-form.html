@@ -1,0 +1,7 @@
+{% load bleach_tags %}
+{% load i18n %}
+
+{% for field in form %}
+    {{ field }} {% trans "I agree that:" %}
+    {{ field.label | bleach }}
+{% endfor %}

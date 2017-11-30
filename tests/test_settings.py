@@ -9,6 +9,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.staticfiles',
     'openid_connect_op',
+    'django_bleach',
     'tests',
 ]
 

@@ -126,6 +126,10 @@ class OpenIDClient(models.Model):
             else:
                 yield agreement
 
+    def get_user_agreements(self, user):
+        # return all the agreements that are applicable to the user. In the current version, that means all
+        return self.agreements
+
     def check_redirect_url(self, _redirect_uri):
         """
         Checks if the actual redirection uri is among the configured uris. If not, returns False.

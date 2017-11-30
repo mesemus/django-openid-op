@@ -1,6 +1,7 @@
 from django.conf.urls import url
 from django.contrib.auth.views import LogoutView
 
+from openid_connect_op.views.consent_view import ConsentView
 from openid_connect_op.views.logout_request_view import LogoutRequestView
 from .views.dynamic_registration_view import DynamicClientRegistrationView
 from .views.jwks_view import JWKSView
@@ -16,6 +17,7 @@ urlpatterns = [
     url('^openid/register', DynamicClientRegistrationView.as_view(), name='register'),
     url('^openid/jwks', JWKSView.as_view(), name='jwks'),
     url('^openid/logout', LogoutRequestView.as_view(), name='logout'),
+    url('^openid/consent/(?P<client_id>\d+)/$', ConsentView.as_view(), name='consent'),
     url('^.well-known/openid-configuration', WellKnownView.as_view(), name='wellknown')
 ]
 

@@ -1,0 +1,12 @@
+{% load i18n %}
+
+<html>
+    <meta charset="UTF-8">
+    <body>
+        <h1>{% trans 'To continue, you have to accept the following terms:'%}</h1>
+        <form method="post">
+            {% include 'django-open-id/consent-form.html' %}
+            <button type="submit" name="agree">{% trans 'I accept the terms and want to continue to {{ client.client_name }}' %}</button>
+        </form>
+    </body>
+</html>

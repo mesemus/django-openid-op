@@ -16,7 +16,7 @@ class OpenIDConnectOPApp(AppConfig):
                 UserInfoProviderRegistry(getattr(settings, 'OPENID_CLAIM_PROVIDERS', []))
 
         if not hasattr(settings, 'OPENID_USER_CONSENT_VIEW'):
-            settings.OPENID_USER_CONSENT_VIEW = 'test:consent'
+            settings.OPENID_USER_CONSENT_VIEW = 'openid_connect_op:consent'
 
         if not hasattr(settings, 'OPENID_DEFAULT_ACCESS_TOKEN_TTL'):
             settings.OPENID_DEFAULT_ACCESS_TOKEN_TTL = 3600

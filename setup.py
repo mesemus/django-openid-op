@@ -54,7 +54,8 @@ setup(
         'django-jsonfield',
         'django-ratelimit',
         'python-jwt',
-        'django-modeltranslation'
+        'django-modeltranslation',
+        'django-bleach'
     ],
     tests_require=[
         'tox',

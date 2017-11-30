@@ -11,7 +11,6 @@ urlpatterns = [
     url('', include(
         (
             [
-                url(r'^openid/consent/(?P<client_id>\d+)/', ConsentView.as_view(), name='consent'),
                 url(r'^$', IndexView.as_view()),
             ],
             'test'
