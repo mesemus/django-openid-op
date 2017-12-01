@@ -36,6 +36,10 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         # noinspection PyBroadException
         try:
             self.parse_request_parameters(request, TokenParameters)
+            try:
+                self.request_parameters.check_errors()
+            except AttributeError as e:
+                raise OAuthError(error=self.attribute_parsing_error, error_description=str(e))
 
             client = self.authenticate_client(request)
 
@@ -52,7 +56,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
                 'error': err.error,
                 'error_description': err.error_description
             })
-        except BaseException:
+        except BaseException as err:
             traceback.print_exc()
             return self.oauth_send_answer(request, {
                 'error': 'unknown_error',

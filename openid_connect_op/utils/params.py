@@ -70,7 +70,7 @@ class Parameters:
                 except AttributeError as e:
                     self.errors.append((parameter_name, e))
 
-    def throw_errors(self):
+    def check_errors(self):
         if self.errors:
             raise self.errors[0][1]
         return self

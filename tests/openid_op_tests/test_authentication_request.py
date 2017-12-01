@@ -19,20 +19,17 @@ class TestAuthenticationRequest:
         resp = client.get('/openid/authorize')
         assert json.loads(resp.content.decode('utf-8')) == {
             "error": "invalid_request_uri",
-            "error_description": "Required parameter with name \"redirect_uri\" is not present"}
+            "error_description": "No redirect_uri in the request"}
         assert resp.status_code == 400
 
     def test_no_params_flow(self, client):
         resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': 'http://localhost:8000/complete/test/?state=1234'
         }))
-        assert resp.status_code == 302
-        assert resp.url.startswith('http://localhost:8000/complete/test/')
-        self.check_query(resp, {
-            'state': ['1234'],
-            'error': ['invalid_request_uri'],
-            'error_description': ['Required parameter with name "response_type" is not present']
-        })
+        assert resp.status_code == 400
+        assert json.loads(resp.content.decode('utf-8')) == {
+            "error": "invalid_request_uri",
+            "error_description": "No client_id in the request"}
 
     @staticmethod
     def check_query(resp, expected):

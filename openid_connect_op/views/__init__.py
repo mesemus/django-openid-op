@@ -49,7 +49,6 @@ class OAuthRequestMixin:
 
             # noinspection PyAttributeOutsideInit
             self.request_parameters = parameters_class(params)
-            self.request_parameters.throw_errors()
         except AttributeError as e:
             raise OAuthError(error=self.attribute_parsing_error, error_description=str(e))
 

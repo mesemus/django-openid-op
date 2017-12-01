@@ -1,3 +1,4 @@
+import json
 from urllib.parse import splitquery
 
 from django.conf import settings
@@ -25,7 +26,9 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
             return HttpResponseBadRequest('Only GET or POST are supported on OpenID endpoint')
 
         try:
-            self.unpack_auth_parameters(request)
+            resp = self.unpack_auth_parameters(request)
+            if resp:
+                return resp
 
             self.validate_max_age()
 
@@ -37,9 +40,9 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
             should_sign_consent = self.should_request_user_consent(request, client)
 
             signal_responses = before_user_consent.send(type(client),
-                                             openid_client=client,
-                                             user=request.user,
-                                             consent_already_signed=not should_sign_consent)
+                                                        openid_client=client,
+                                                        user=request.user,
+                                                        consent_already_signed=not should_sign_consent)
             for resp in signal_responses:
                 if isinstance(resp[1], HttpResponse):
                     return resp[1]
@@ -99,7 +102,20 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
                 self.request_parameters = AuthenticationParameters.unpack(
                     request.GET['authp'].encode('ASCII'), key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY))
             else:
-                return self.parse_request_parameters(request, AuthenticationParameters)
+                self.parse_request_parameters(request, AuthenticationParameters)
+                if not hasattr(self.request_parameters, 'redirect_uri') or not self.request_parameters.redirect_uri:
+                    return HttpResponseBadRequest(json.dumps({
+                        'error': 'invalid_request_uri',
+                        'error_description': 'No redirect_uri in the request'
+                    }))
+
+                if not hasattr(self.request_parameters, 'client_id') or not self.request_parameters.client_id:
+                    return HttpResponseBadRequest(json.dumps({
+                        'error': 'invalid_request_uri',
+                        'error_description': 'No client_id in the request'
+                    }))
+
+                self.request_parameters.check_errors()
         except AttributeError as e:
             raise OAuthError(error='invalid_request_uri', error_description=str(e))
 

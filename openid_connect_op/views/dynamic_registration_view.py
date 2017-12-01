@@ -36,6 +36,10 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
 
         try:
             self.parse_request_parameters(request, DynamicClientRegistrationParameters)
+            try:
+                self.request_parameters.check_errors()
+            except AttributeError as e:
+                raise OAuthError(error=self.attribute_parsing_error, error_description=str(e))
 
             client_id = secrets.token_urlsafe(32)
             client_secret = secrets.token_urlsafe(32)
