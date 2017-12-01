@@ -31,7 +31,7 @@ class TestAuthenticationRequest:
         self.check_query(resp, {
             'state': ['1234'],
             'error': ['invalid_request_uri'],
-            'error_description': ['Required parameter with name "client_id" is not present']
+            'error_description': ['Required parameter with name "response_type" is not present']
         })
 
     @staticmethod
@@ -42,13 +42,15 @@ class TestAuthenticationRequest:
     def test_unknown_client_id_flow(self, client):
         resp = client.get('/openid/authorize?' + urlencode({
             'redirect_uri': 'http://localhost:8000/complete/test/?state=1234',
-            'client_id': '1'
+            'client_id': '1',
+            'scope': 'openid',
+            'response_type': 'code'
         }))
         assert resp.status_code == 302
         self.check_query(resp, {
             'state': ['1234'],
-            'error': ['invalid_request_uri'],
-            'error_description': ['Required parameter with name "scope" is not present']
+            'error': ['unauthorized_client'],
+            'error_description': ['The client is unauthorized to get authentication token']
         })
 
     def test_no_response_type(self, client):

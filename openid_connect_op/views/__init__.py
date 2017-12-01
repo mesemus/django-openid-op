@@ -18,12 +18,11 @@ class OAuthRequestMixin:
     def oauth_send_answer(self, request, response_params):
         actual_params = {}
         actual_params.update(response_params)
-        if self.request_parameters:
-            redirect_uri = self.request_parameters.redirect_uri
-            if hasattr(self.request_parameters, 'state') and self.request_parameters.state:
-                actual_params['state'] = self.request_parameters.state
-        else:
-            redirect_uri = request.GET.get('redirect_uri', None) or request.POST.get('redirect_uri', None)
+        redirect_uri = getattr(self.request_parameters, 'redirect_uri', None) or \
+                       request.GET.get('redirect_uri', None) or \
+                       request.POST.get('redirect_uri', None)
+        if hasattr(self.request_parameters, 'state') and self.request_parameters.state:
+            actual_params['state'] = self.request_parameters.state
 
         if not redirect_uri or not self.use_redirect_uri:
             return JsonResponse(actual_params, status=400 if 'error' in response_params else 200)
@@ -50,6 +49,7 @@ class OAuthRequestMixin:
 
             # noinspection PyAttributeOutsideInit
             self.request_parameters = parameters_class(params)
+            self.request_parameters.throw_errors()
         except AttributeError as e:
             raise OAuthError(error=self.attribute_parsing_error, error_description=str(e))
 

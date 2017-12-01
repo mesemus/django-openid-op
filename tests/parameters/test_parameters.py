@@ -19,7 +19,7 @@ def test_parameter_parsing():
         'b': 'def',
         'c': 'a ba',
         'd': 'ba a'
-    })
+    }).throw_errors()
     assert p.a == 'abc'
     assert p.b == 'def'
     assert p.c == {'a', 'ba'}
@@ -28,7 +28,7 @@ def test_parameter_parsing():
 
 def test_required_parameter():
     with pytest.raises(AttributeError) as e:
-        Params({})
+        Params({}).throw_errors()
     assert str(e.value) == 'Required parameter with name "a" is not present'
 
 
@@ -36,7 +36,7 @@ def test_allowed_values():
     p = Params({
         'a': '123',
         'e': 'a c b'
-    })
+    }).throw_errors()
     assert p.a == '123'
     assert p.e == {'a', 'b', 'c'}
 
@@ -44,7 +44,7 @@ def test_allowed_values():
         Params({
             'a': '123',
             'e': 'a c b d'
-        })
+        }).throw_errors()
     assert str(e.value) == 'Value "d" is not allowed for parameter e. Allowed values are "a", "b", "c"'
 
 
@@ -53,7 +53,7 @@ def test_pack_unpack():
         'a': 'abc,',
         'b': 'def',
         'd': 'ba a'
-    })
+    }).throw_errors()
     assert isinstance(p.d, list)
     packed = p.pack(True, prefix=b'TOK', key=b'0123456789ABCDEF')
     unpacked_p = Params.unpack(packed, prefix=b'TOK', key=b'0123456789ABCDEF')

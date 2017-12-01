@@ -61,11 +61,19 @@ class Parameters:
     ZLIB_DICT = b'openidhttp,,,,'
 
     def __init__(self, param_values):
-
+        self.errors = []
         if param_values is not None:
             for parameter_name, parameter_definition in self.parameter_definitions:
-                parsed_value = parameter_definition.parse(parameter_name, param_values.get(parameter_name, None))
-                setattr(self, parameter_name, parsed_value)
+                try:
+                    parsed_value = parameter_definition.parse(parameter_name, param_values.get(parameter_name, None))
+                    setattr(self, parameter_name, parsed_value)
+                except AttributeError as e:
+                    self.errors.append((parameter_name, e))
+
+    def throw_errors(self):
+        if self.errors:
+            raise self.errors[0][1]
+        return self
 
     def to_dict(self):
         return {
