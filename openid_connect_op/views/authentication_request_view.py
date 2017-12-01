@@ -11,7 +11,7 @@ from django.utils.http import urlencode
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from openid_connect_op.models import OpenIDClient, OpenIDKey
+from openid_connect_op.models import OpenIDClient, OpenIDKey, OpenIDToken
 from openid_connect_op.signals import before_user_consent
 from openid_connect_op.views.parameters import AuthenticationParameters
 from . import OAuthRequestMixin
@@ -52,10 +52,13 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
 
             if 'code' in self.request_parameters.response_type:
                 self.request_parameters.username = request.user.username
+                auth_token, auth_db_token = \
+                    OpenIDToken.create_token(client=client, token_type=OpenIDToken.TOKEN_TYPE_AUTH,
+                                             token_data=self.request_parameters.to_dict(),
+                                             ttl=getattr(settings, 'OPENID_AUTH_TOKEN_TTL', 20),
+                                             user=request.user)
                 return self.oauth_send_answer(request, {
-                    'code': self.request_parameters.pack(ttl=60, prefix=b'AUTH',
-                                                         key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY)
-                                                         )
+                    'code': auth_token
                 })
             else:
                 raise OAuthError(error='parameter_not_supported',

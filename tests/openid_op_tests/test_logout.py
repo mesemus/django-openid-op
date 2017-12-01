@@ -118,5 +118,5 @@ class TestLogoutRequest:
         redirect_query = parse_qs(redirect_query)
         assert redirect_query['state'] == ['1234']
         assert 'code' in redirect_query
-        code = redirect_query['code']
+        code = redirect_query['code'][0]
         return code

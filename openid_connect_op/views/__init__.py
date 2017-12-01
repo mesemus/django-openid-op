@@ -25,7 +25,13 @@ class OAuthRequestMixin:
             actual_params['state'] = self.request_parameters.state
 
         if not redirect_uri or not self.use_redirect_uri:
-            return JsonResponse(actual_params, status=400 if 'error' in response_params else 200)
+            status = 200
+            if 'error' in response_params:
+                if response_params['error'] == 'unauthorized_client':
+                    status = 403
+                else:
+                    status = 400
+            return JsonResponse(actual_params, status=status)
 
         if '?' in redirect_uri:
             redirect_uri += '&'

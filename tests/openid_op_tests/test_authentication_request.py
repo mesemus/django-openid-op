@@ -18,7 +18,7 @@ class TestAuthenticationRequest:
     def test_no_redirect_uri_flow(self, client):
         resp = client.get('/openid/authorize')
         assert json.loads(resp.content.decode('utf-8')) == {
-            "error": "invalid_request_uri",
+            "error": "invalid_request",
             "error_description": "No redirect_uri in the request"}
         assert resp.status_code == 400
 
@@ -28,7 +28,7 @@ class TestAuthenticationRequest:
         }))
         assert resp.status_code == 400
         assert json.loads(resp.content.decode('utf-8')) == {
-            "error": "invalid_request_uri",
+            "error": "invalid_request",
             "error_description": "No client_id in the request"}
 
     @staticmethod
@@ -59,7 +59,7 @@ class TestAuthenticationRequest:
         assert resp.status_code == 302
         self.check_query(resp, {
             'state': ['1234'],
-            'error': ['invalid_request_uri'],
+            'error': ['invalid_request'],
             'error_description': ['Required parameter with name "response_type" is not present']
         })
 
@@ -73,7 +73,7 @@ class TestAuthenticationRequest:
         assert resp.status_code == 302
         self.check_query(resp, {
             'state': ['1234'],
-            'error': ['invalid_request_uri'],
+            'error': ['invalid_request'],
             'error_description': ['Value "unsupported_token" is not allowed for parameter '
                                   'response_type. Allowed values are "code", "id_token", "token"']
         })
@@ -153,10 +153,6 @@ class TestAuthenticationRequest:
         redirect_query = parse_qs(redirect_query)
         assert redirect_query['state'] == ['1234']
         assert 'code' in redirect_query
-
-        # check that ?code param contains correctly encrypted value
-        AuthenticationParameters.unpack(redirect_query['code'][0].encode('utf-8'), prefix=b'AUTH',
-                                        key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY))
 
     def test_require_new_login(self, client, client_config, user):
         client.force_login(user)

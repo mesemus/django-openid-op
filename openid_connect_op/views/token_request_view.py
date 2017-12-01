@@ -48,7 +48,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
             elif self.request_parameters.grant_type == {'refresh_token'}:
                 return self.process_refresh_token(request, client)
             else:
-                raise OAuthError(error='invalid_request_uri',
+                raise OAuthError(error='invalid_request',
                                  error_description='Invalid grant type %s' % self.request_parameters.grant_type)
 
         except OAuthError as err:
@@ -69,13 +69,23 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
             raise OAuthError(error='invalid_request',
                              error_description='Required parameter with name "code" is not present')
 
-        try:
-            authentication_parameters = AuthenticationParameters.unpack(
-                self.request_parameters.code.encode('ascii'), prefix=b'AUTH',
-                key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY)
-            )
-        except ValueError as e:
-            raise OAuthError(error='unauthorized_client', error_description=str(e))
+        authorization_token = OpenIDToken.objects.filter(
+            token_hash=OpenIDToken.get_token_hash(self.request_parameters.code),
+            client=client,
+            token_type=OpenIDToken.TOKEN_TYPE_AUTH).first()
+
+        if not authorization_token:
+            raise OAuthError(error='unauthorized_client',
+                             error_description='Authorization token not found')
+
+        if authorization_token.expired:
+            raise OAuthError(error='unauthorized_client',
+                             error_description='Authorization token expired')
+
+        authentication_parameters = AuthenticationParameters(authorization_token.token_data)
+
+        # prevent reusing
+        authorization_token.delete()
 
         self.validate_redirect_uri(authentication_parameters)
 
@@ -88,7 +98,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         try:
             refresh_token = OpenIDToken.objects.get(
                 token_hash=OpenIDToken.get_token_hash(self.request_parameters.refresh_token))
-            if refresh_token.expiration < timezone.now():
+            if refresh_token.expired:
                 raise OAuthError(error='invalid_grant', error_description='Refresh token expired')
         except OpenIDToken.DoesNotExist:
             raise OAuthError(error='invalid_grant', error_description='No such token was found')
@@ -131,10 +141,10 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         auth_redirect_uri = authentication_parameters.redirect_uri
         token_redirect_uri = self.request_parameters.redirect_uri
         if auth_redirect_uri and auth_redirect_uri != token_redirect_uri:
-            raise OAuthError(error='invalid_request_uri',
+            raise OAuthError(error='invalid_request',
                              error_description='redirect_uri does not match the one used in /authorize endpoint')
         if not auth_redirect_uri and token_redirect_uri:
-            raise OAuthError(error='invalid_request_uri',
+            raise OAuthError(error='invalid_request',
                              error_description='redirect_uri not used in authentication but passed for token')
 
     def authenticate_client(self, request):

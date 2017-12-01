@@ -52,7 +52,7 @@ class TestUserInfo:
         redirect_query = parse_qs(redirect_query)
         assert redirect_query['state'] == ['1234']
         assert 'code' in redirect_query
-        code = redirect_query['code']
+        code = redirect_query['code'][0]
 
         resp = client.get('/openid/token?' + urlencode({
             'redirect_uri': client_config.redirect_uris,

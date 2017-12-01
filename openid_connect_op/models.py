@@ -256,6 +256,11 @@ class OpenIDToken(models.Model):
         """
         return hashlib.sha256(token.encode('ascii')).hexdigest()
 
+    @property
+    def expired(self):
+        return self.expiration < timezone.now()
+
+    TOKEN_TYPE_AUTH = 'AUTH'
     TOKEN_TYPE_ACCESS_BEARER_TOKEN = 'ACCT'
     TOKEN_TYPE_REFRESH_TOKEN = 'REFR'
     TOKEN_TYPE_ID_TOKEN = 'ID'

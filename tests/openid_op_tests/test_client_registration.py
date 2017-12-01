@@ -43,7 +43,7 @@ class TestClientRegistrationRequest:
 
         assert resp.status_code == 400
         assert json.loads(resp.content.decode('utf-8')) == {
-            'error': 'invalid_request_uri',
+            'error': 'invalid_request',
             'error_description': 'Required parameter with name "redirect_uris" is not present'
         }
 

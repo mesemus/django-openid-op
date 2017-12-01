@@ -30,7 +30,7 @@ class TestWellKnownURL:
             'jwks_uri': 'http://testserver/openid/jwks',
             'response_types_supported': ['code'],
             'scopes_supported': ['openid', 'email', 'profile'],
-            'subject_types_supported': ['public', 'pairwise'],
+            'subject_types_supported': ['public'],
             'token_endpoint': 'http://testserver/openid/token',
             'end_session_endpoint': 'http://testserver/openid/logout',
             'registration_endpoint': 'http://testserver/openid/register',

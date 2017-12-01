@@ -46,6 +46,29 @@ class TestTokenRequest:
 
         self.check_token_response(settings, client_config, resp)
 
+    def test_double_authorization_code_for_user(self, client, client_config, user, settings):
+        code = self.get_authorization_code(client, client_config, user)
+        resp = client.get('/openid/token?' + urlencode({
+            'redirect_uri': client_config.redirect_uris,
+            'grant_type': 'authorization_code',
+            'code': code,
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
+
+        self.check_token_response(settings, client_config, resp)
+
+        resp = client.get('/openid/token?' + urlencode({
+            'redirect_uri': client_config.redirect_uris,
+            'grant_type': 'authorization_code',
+            'code': code,
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
+
+        assert resp.status_code == 403
+        data = json.loads(resp.content.decode('utf-8'))
+        assert data == {'error': 'unauthorized_client',
+                        'error_description': 'Authorization token not found'}
+
+
+
     def test_logged_user_post(self, client, client_config, user, settings):
         # set auth type to POST
         client_config.client_auth_type = client_config.CLIENT_AUTH_TYPE_POST
@@ -103,7 +126,7 @@ class TestTokenRequest:
         redirect_query = parse_qs(redirect_query)
         assert redirect_query['state'] == ['1234']
         assert 'code' in redirect_query
-        code = redirect_query['code']
+        code = redirect_query['code'][0]
         return code
 
     def test_bad_redirect_uri(self, client, client_config, user):
@@ -115,7 +138,7 @@ class TestTokenRequest:
         }), HTTP_AUTHORIZATION=BASIC_AUTH)
         assert resp.status_code == 400
         data = json.loads(resp.content.decode('utf-8'))
-        assert data == {'error': 'invalid_request_uri',
+        assert data == {'error': 'invalid_request',
                         'error_description': 'redirect_uri does not match the one used in /authorize endpoint'}
 
     def test_no_grant_type(self, client, client_config, user):
@@ -149,10 +172,10 @@ class TestTokenRequest:
             'grant_type': 'authorization_code',
             'code': '1234',
         }), HTTP_AUTHORIZATION=BASIC_AUTH)
-        assert resp.status_code == 400
+        assert resp.status_code == 403
         data = json.loads(resp.content.decode('utf-8'))
         assert data == {'error': 'unauthorized_client',
-                        'error_description': 'MAC check failed'}
+                        'error_description': 'Authorization token not found'}
 
     def test_no_code(self, client, client_config, user):
         self.get_authorization_code(client, client_config, user)
