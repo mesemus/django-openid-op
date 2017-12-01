@@ -12,7 +12,7 @@ class WellKnownView(View):
         "response_types_supported":
             ["code"],
         "subject_types_supported":
-            ["public", "pairwise"],
+            ["public"],
         "userinfo_signing_alg_values_supported":
             ["RS256"],
         "id_token_signing_alg_values_supported":
