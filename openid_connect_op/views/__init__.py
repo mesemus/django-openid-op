@@ -13,7 +13,7 @@ class OAuthRequestMixin:
 
     request_parameters = None
     use_redirect_uri = True
-    attribute_parsing_error = 'invalid_request_uri'
+    attribute_parsing_error = 'invalid_request'
 
     def oauth_send_answer(self, request, response_params):
         actual_params = {}

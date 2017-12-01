@@ -105,19 +105,19 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
                 self.parse_request_parameters(request, AuthenticationParameters)
                 if not hasattr(self.request_parameters, 'redirect_uri') or not self.request_parameters.redirect_uri:
                     return HttpResponseBadRequest(json.dumps({
-                        'error': 'invalid_request_uri',
+                        'error': 'invalid_request',
                         'error_description': 'No redirect_uri in the request'
                     }))
 
                 if not hasattr(self.request_parameters, 'client_id') or not self.request_parameters.client_id:
                     return HttpResponseBadRequest(json.dumps({
-                        'error': 'invalid_request_uri',
+                        'error': 'invalid_request',
                         'error_description': 'No client_id in the request'
                     }))
 
                 self.request_parameters.check_errors()
         except AttributeError as e:
-            raise OAuthError(error='invalid_request_uri', error_description=str(e))
+            raise OAuthError(error='invalid_request', error_description=str(e))
 
     def authenticate(self, request):
         # if user is already logged in, a re-logging was requested, so forget the user
