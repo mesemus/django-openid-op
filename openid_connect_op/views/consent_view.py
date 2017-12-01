@@ -1,9 +1,11 @@
 from django import forms
+from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.views.generic import FormView
 
 from openid_connect_op.models import OpenIDAgreement, OpenIDClient, OpenIDUserAgreement
+from openid_connect_op.signals import after_user_consent
 
 
 class ConsentForm(forms.Form):
@@ -56,6 +58,12 @@ class ConsentView(FormView):
 
     def form_valid(self, form):
         form.save()
+        signal_responses = after_user_consent.send(type(self.openid_client),
+                                openid_client=self.openid_client,
+                                user=self.request.user)
+        for resp in signal_responses:
+            if isinstance(resp[1], HttpResponse):
+                return resp[1]
         return super().form_valid(form)
 
     def get_success_url(self):

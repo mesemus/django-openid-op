@@ -3,7 +3,7 @@ from urllib.parse import splitquery
 from django.conf import settings
 from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
-from django.http.response import HttpResponseBadRequest
+from django.http.response import HttpResponseBadRequest, HttpResponse
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.http import urlencode
@@ -11,6 +11,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from openid_connect_op.models import OpenIDClient, OpenIDKey
+from openid_connect_op.signals import before_user_consent
 from openid_connect_op.views.parameters import AuthenticationParameters
 from . import OAuthRequestMixin
 from .errors import OAuthError
@@ -33,7 +34,17 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
             if self.should_login(request):
                 return self.authenticate(request)
 
-            if self.should_request_user_consent(request, client):
+            should_sign_consent = self.should_request_user_consent(request, client)
+
+            signal_responses = before_user_consent.send(type(client),
+                                             openid_client=client,
+                                             user=request.user,
+                                             consent_already_signed=not should_sign_consent)
+            for resp in signal_responses:
+                if isinstance(resp[1], HttpResponse):
+                    return resp[1]
+
+            if should_sign_consent:
                 return self.request_user_consent(request, client)
 
             if 'code' in self.request_parameters.response_type:
