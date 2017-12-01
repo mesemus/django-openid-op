@@ -20,6 +20,7 @@ class RequestLoggerMiddleware(object):
             print('    path    :', request.path)
             print('    method  :', request.method)
             print('    AUTH    :', request.META.get('HTTP_AUTHORIZATION'))
+            print('    META    :', list(request.META.keys()))
             print('    GET     :', request.GET)
             print('    POST    :', request.POST)
             if _body_to_log:
