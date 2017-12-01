@@ -86,7 +86,7 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
         try:
             if 'authp' in request.GET:
                 self.request_parameters = AuthenticationParameters.unpack(
-                    request.GET['authp'].encode('ASCII'))
+                    request.GET['authp'].encode('ASCII'), key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY))
             else:
                 return self.parse_request_parameters(request, AuthenticationParameters)
         except AttributeError as e:

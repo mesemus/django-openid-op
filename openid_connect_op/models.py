@@ -122,13 +122,13 @@ class OpenIDClient(models.Model):
         for agreement in agreements_user_has_not_signed:
             # try to auto approve
             if agreement.can_auto_approve(user.username):
-                OpenIDUserAgreement.objects.create(agreement=agreement, user=user)
+                OpenIDUserAgreement.objects.create(agreement=agreement, user=user, agreed_on=timezone.now())
             else:
                 yield agreement
 
     def get_user_agreements(self, user):
         # return all the agreements that are applicable to the user. In the current version, that means all
-        return self.agreements
+        return self.agreements.all()
 
     def check_redirect_url(self, _redirect_uri):
         """
@@ -226,6 +226,10 @@ class OpenIDAgreement(models.Model):
 class OpenIDUserAgreement(models.Model):
     agreement = models.ForeignKey(OpenIDAgreement, on_delete=models.CASCADE, related_name='user_agreements')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_agreements')
+    agreed_on = models.DateTimeField()
+    agreed_by_user = models.BooleanField(default=False, verbose_name='If set to False, '
+                                                                     'the agreement was created automatically, '
+                                                                     'otherwise it was created explicitly by user')
 
 
 class OpenIDToken(models.Model):

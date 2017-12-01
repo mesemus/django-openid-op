@@ -2,14 +2,17 @@ import os
 
 SECRET_KEY = 'fake-key'
 INSTALLED_APPS = [
-    'django.contrib.contenttypes',
-    'django.contrib.auth',
     'modeltranslation',
     'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
     'django.contrib.sessions',
+    'django.contrib.messages',
     'django.contrib.staticfiles',
-    'openid_connect_op',
+
     'django_bleach',
+
+    'openid_connect_op',
     'tests',
 ]
 
@@ -39,6 +42,26 @@ DEBUG = True
 
 STATIC_URL = '/static/'
 
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.contrib.auth.context_processors.auth',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.i18n',
+                'django.template.context_processors.media',
+                'django.template.context_processors.static',
+                'django.template.context_processors.tz',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+
 # OpenID server
 
 APPEND_SLASH = False
@@ -49,24 +72,6 @@ if 'TEST_SERVER_CLIENT' in os.environ:
     RUNNING_TEST_SERVER_CLIENT = True
 
     print("Running in test server with python-social-auth")
-
-    TEMPLATES = [
-        {
-            'BACKEND': 'django.template.backends.django.DjangoTemplates',
-            'APP_DIRS': True,
-            'OPTIONS': {
-                'context_processors': [
-                    'django.contrib.auth.context_processors.auth',
-                    'django.template.context_processors.debug',
-                    'django.template.context_processors.i18n',
-                    'django.template.context_processors.media',
-                    'django.template.context_processors.static',
-                    'django.template.context_processors.tz',
-                    'django.contrib.messages.context_processors.messages',
-                ],
-            },
-        },
-    ]
 
     AUTHENTICATION_BACKENDS = (
         'tests.backends.ConfiguredOpenIdConnectAuth',

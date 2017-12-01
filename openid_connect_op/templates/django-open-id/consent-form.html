@@ -1,7 +1,17 @@
 {% load bleach_tags %}
 {% load i18n %}
 
-{% for field in form %}
-    {{ field }} {% trans "I agree that:" %}
-    {{ field.label | bleach }}
+{% for agreement in form.agreements %}
+    {% if agreement.obligatory %}
+        <p>
+            {{ agreement.text | bleach }}
+        </p>
+    {% else %}
+        <div>
+            <input type="checkbox" name="agreement_{{ agreement.id }}"
+                {% if agreement.agreed %}checked{% endif %}
+            >
+            {{ agreement.text | bleach }}
+        </div>
+    {% endif %}
 {% endfor %}

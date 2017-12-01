@@ -1,5 +1,6 @@
 import pytest
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 from openid_connect_op.models import OpenIDClient, OpenIDAgreement, OpenIDUserAgreement
 
@@ -18,13 +19,13 @@ class TestAgreements:
         unsigned_agreements = set(client_config.get_unsigned_agreements(u))
         assert unsigned_agreements == {agr1, agr2}
 
-        OpenIDUserAgreement.objects.create(agreement=agr1, user=u)
+        OpenIDUserAgreement.objects.create(agreement=agr1, user=u, agreed_on=timezone.now())
 
         assert not client_config.has_user_agreement(u)
         unsigned_agreements = set(client_config.get_unsigned_agreements(u))
         assert unsigned_agreements == {agr2}
 
-        OpenIDUserAgreement.objects.create(agreement=agr2, user=u)
+        OpenIDUserAgreement.objects.create(agreement=agr2, user=u, agreed_on=timezone.now())
 
         assert client_config.has_user_agreement(u)
         unsigned_agreements = set(client_config.get_unsigned_agreements(u))
@@ -41,13 +42,13 @@ class TestAgreements:
         unsigned_agreements = set(client_config.get_unsigned_agreements(u))
         assert unsigned_agreements == {agr1, agr2}
 
-        OpenIDUserAgreement.objects.create(agreement=agr1, user=u)
+        OpenIDUserAgreement.objects.create(agreement=agr1, user=u, agreed_on=timezone.now())
 
         assert client_config.has_user_agreement(u)
         unsigned_agreements = set(client_config.get_unsigned_agreements(u))
         assert unsigned_agreements == {agr2}
 
-        OpenIDUserAgreement.objects.create(agreement=agr2, user=u)
+        OpenIDUserAgreement.objects.create(agreement=agr2, user=u, agreed_on=timezone.now())
 
         assert client_config.has_user_agreement(u)
         unsigned_agreements = set(client_config.get_unsigned_agreements(u))
