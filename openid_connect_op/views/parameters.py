@@ -4,9 +4,9 @@ from openid_connect_op.utils.params import Parameters, ParameterType
 class AuthenticationParameters(Parameters):
     parameter_definitions = (
         ('redirect_uri', Parameters.REQUIRED),
+        ('response_type', ParameterType(required=True, container_type=set, allowed_values={'code', 'token', 'id_token'})),
         ('client_id', Parameters.REQUIRED),
         ('scope', ParameterType(required=True, container_type=set)),
-        ('response_type', ParameterType(required=True, container_type=set, allowed_values={'code', 'token', 'id_token'})),
 
         ('state', Parameters.OPTIONAL),
         # currently not used at all
