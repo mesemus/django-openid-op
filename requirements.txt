@@ -5,3 +5,4 @@ django-ratelimit
 python-jwt
 django-modeltranslation
 django-bleach
+requests

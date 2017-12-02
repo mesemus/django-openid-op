@@ -55,7 +55,8 @@ setup(
         'django-ratelimit',
         'python-jwt',
         'django-modeltranslation',
-        'django-bleach'
+        'django-bleach',
+        'requests'
     ],
     tests_require=[
         'tox',
