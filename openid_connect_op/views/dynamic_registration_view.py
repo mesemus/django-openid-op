@@ -48,9 +48,8 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
                 try:
                     redirect_uris = requests.get(self.request_parameters.sector_identifier_uri)
                     redirect_uris = redirect_uris.json()
-                    for ru in self.request_parameters.redirect_uris.split():
-                        ru = ru.strip()
-                        if ru and ru not in redirect_uris:
+                    for ru in self.request_parameters.redirect_uris:
+                        if ru not in redirect_uris:
                             raise OAuthError('invalid_request',
                                              'Redirect URI not in json document pointed by sector_identifier_uri')
                 except OAuthError:
