@@ -2,6 +2,7 @@ import json
 from urllib.parse import urlencode, parse_qs, splitquery
 
 import pytest
+import re
 from django.contrib.auth.models import User
 from django.core.management import call_command
 
@@ -222,3 +223,20 @@ class TestAuthenticationRequest:
         # check that ?authp param contains correctly encrypted value
         AuthenticationParameters.unpack(next_query['authp'][0].encode('utf-8'),
                                         key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY))
+
+    def test_form_post_response_mode(self, client, client_config, user):
+        client.force_login(user)
+        resp = client.get('/openid/authorize?' + urlencode({
+            'redirect_uri': client_config.redirect_uris,
+            'client_id': 'test',
+            'scope': 'openid',
+            'response_type': 'code',
+            'response_mode': 'form_post'
+        }))
+
+        assert resp.status_code == 200
+        content = resp.content.decode('utf-8')
+        assert 'Submit This Form' in content
+        assert '<body onload="javascript:document.forms[0].submit()">' in content
+        assert '<form method="post" action="http://localhost:8000/complete/test/?state=1234">' in content
+        assert re.search(r'<input type="hidden" name="code" value="[^"]+"/>', content)

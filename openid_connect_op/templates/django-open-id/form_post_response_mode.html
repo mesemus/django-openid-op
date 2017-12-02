@@ -1,0 +1,11 @@
+<html>
+<head><title>Submit This Form</title></head>
+<body onload="javascript:document.forms[0].submit()">
+<form method="post" action="{{ redirect_uri }}">
+    {% for k, v in params.items %}
+        <input type="hidden" name="{{ k }}" value="{{ v }}"/>
+    {% endfor %}
+    <input type="submit" value="If not redirected within 5 seconds, please click on this button">
+</form>
+</body>
+</html>

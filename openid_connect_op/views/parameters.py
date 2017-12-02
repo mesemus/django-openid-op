@@ -15,7 +15,8 @@ class AuthenticationParameters(Parameters):
         # currently not used at all
         # 'id_token_hint', Parameters.OPTIONAL,
         # 'login_hint', Parameters.OPTIONAL,
-        ('response_mode', ParameterType(required=False, container_type=set, allowed_values={'query', 'fragment'})),
+        ('response_mode', ParameterType(required=False, container_type=set,
+                                        allowed_values={'query', 'fragment', 'form_post'})),
         # currently not used at all
         # 'display', ParameterType(required=False, container_type=set,
         #                          allowed_values={'page', 'popup', 'touch', 'wap'}),
