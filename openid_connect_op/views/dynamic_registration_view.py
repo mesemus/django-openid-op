@@ -1,5 +1,8 @@
 # section 4.1.3 of OAUTH 2.0
 import json
+
+import requests
+
 try:
     import secrets
 except ImportError:
@@ -40,6 +43,22 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
                 self.request_parameters.check_errors()
             except AttributeError as e:
                 raise OAuthError(error=self.attribute_parsing_error, error_description=str(e))
+
+            if self.request_parameters.sector_identifier_uri:
+                try:
+                    redirect_uris = requests.get(self.request_parameters.sector_identifier_uri)
+                    redirect_uris = redirect_uris.json()
+                    for ru in self.request_parameters.redirect_uris.split():
+                        ru = ru.strip()
+                        if ru and ru not in redirect_uris:
+                            raise OAuthError('invalid_request',
+                                             'Redirect URI not in json document pointed by sector_identifier_uri')
+                except OAuthError:
+                    raise
+                except BaseException as e:
+                    raise OAuthError('invalid_request',
+                                     'Error fetching/parsing sector_identifier_uri at %s: %s' %
+                                     (self.request_parameters.sector_identifier_uri, str(e)))
 
             client_id = secrets.token_urlsafe(32)
             client_secret = secrets.token_urlsafe(32)
