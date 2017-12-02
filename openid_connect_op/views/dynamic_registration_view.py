@@ -1,7 +1,10 @@
 # section 4.1.3 of OAUTH 2.0
+import hashlib
 import json
+from urllib.parse import urlparse
 
 import requests
+from django.conf import settings
 
 try:
     import secrets
@@ -44,6 +47,7 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
             except AttributeError as e:
                 raise OAuthError(error=self.attribute_parsing_error, error_description=str(e))
 
+            pairwise_key = None
             if self.request_parameters.sector_identifier_uri:
                 try:
                     redirect_uris = requests.get(self.request_parameters.sector_identifier_uri)
@@ -58,6 +62,19 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
                     raise OAuthError('invalid_request',
                                      'Error fetching/parsing sector_identifier_uri at %s: %s' %
                                      (self.request_parameters.sector_identifier_uri, str(e)))
+                pairwise_key = urlparse(self.request_parameters.sector_identifier_uri).hostname
+            else:
+                for ru in self.request_parameters.redirect_uris:
+                    hostname = urlparse(ru).hostname
+                    if pairwise_key and pairwise_key != hostname:
+                        raise OAuthError('invalid_request', 'In case that redirect_uris do not share the same host, '
+                                                            'sector_identifier_uri parameter is required')
+                    pairwise_key = hostname
+
+            if 'pairwise' in self.request_parameters.subject_type:
+                pairwise_key = hashlib.sha256((pairwise_key + settings.SECRET_KEY).encode('utf-8')).hexdigest()
+            else:
+                pairwise_key = None
 
             client_id = secrets.token_urlsafe(32)
             client_secret = secrets.token_urlsafe(32)
@@ -66,7 +83,8 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
                 client_id=client_id,
                 redirect_uris='\n'.join(self.request_parameters.redirect_uris),
                 client_auth_type=OpenIDClient.CLIENT_AUTH_TYPE_BASIC,
-                client_name=self.request_parameters.client_name
+                client_name=self.request_parameters.client_name,
+                sub_hash = pairwise_key
             )
             client.set_client_secret(client_secret)
             client.save()

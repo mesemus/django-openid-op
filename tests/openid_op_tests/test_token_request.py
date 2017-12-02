@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import json
 from urllib.parse import urlencode, splitquery, parse_qs
 
@@ -36,6 +37,19 @@ class TestTokenRequest:
         ret.save()
         return ret
 
+    @pytest.fixture()
+    def client_config_pairwise(self):
+        redirect_uri = 'http://localhost:8000/complete/test/?state=1234'
+        ret = OpenIDClient.objects.create(
+            client_id='test',
+            redirect_uris=redirect_uri,
+            client_auth_type=OpenIDClient.CLIENT_AUTH_TYPE_BASIC,
+            sub_hash='aaa'
+        )
+        ret.set_client_secret('b')
+        ret.save()
+        return ret
+
     def test_logged_user(self, client, client_config, user, settings):
         code = self.get_authorization_code(client, client_config, user)
         resp = client.get('/openid/token?' + urlencode({
@@ -67,8 +81,6 @@ class TestTokenRequest:
         assert data == {'error': 'unauthorized_client',
                         'error_description': 'Authorization token not found'}
 
-
-
     def test_logged_user_post(self, client, client_config, user, settings):
         # set auth type to POST
         client_config.client_auth_type = client_config.CLIENT_AUTH_TYPE_POST
@@ -84,8 +96,20 @@ class TestTokenRequest:
 
         self.check_token_response(settings, client_config, resp)
 
+    def test_logged_user_pairwise(self, client, client_config_pairwise, user, settings):
+        code = self.get_authorization_code(client, client_config_pairwise, user)
+        resp = client.get('/openid/token?' + urlencode({
+            'redirect_uri': client_config_pairwise.redirect_uris,
+            'grant_type': 'authorization_code',
+            'code': code,
+        }), HTTP_AUTHORIZATION=BASIC_AUTH)
+
+        self.check_token_response(
+            settings, client_config_pairwise, resp,
+            sub=hashlib.sha256((user.username + client_config_pairwise.sub_hash).encode('utf-8')).hexdigest())
+
     @staticmethod
-    def check_token_response(settings, client_config, resp):
+    def check_token_response(settings, client_config, resp, sub='a'):
         assert resp.status_code == 200
         data = json.loads(resp.content.decode('utf-8'))
         assert 'access_token' in data
@@ -108,7 +132,7 @@ class TestTokenRequest:
         assert payload['exp'] == int(payload['exp'])
         assert payload['iat'] == int(payload['iat'])
         assert payload['aud'] == ['test']
-        assert payload['sub'] == 'a'  # username
+        assert payload['sub'] == sub  # username
         assert payload['iss'] == 'http://testserver/'
 
     @staticmethod

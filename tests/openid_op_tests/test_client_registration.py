@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 import pytest
@@ -76,6 +77,39 @@ class TestClientRegistrationRequest:
         client = OpenIDClient.objects.get(client_id=client_id)
         assert client.check_client_secret(client_secret)
 
+    def test_client_registration_pairwise(self, client, openid_client, user):
+        token = OpenIDToken.create_token(openid_client, OpenIDToken.TOKEN_TYPE_CLIENT_DYNAMIC_REGISTRATION,
+                                         {}, 1e9, user)[0]
+        resp = client.post(
+            '/openid/register',
+            json.dumps({
+                'redirect_uris': [
+                    'http://test.org/auth/complete'
+                ],
+                'subject_type': ['pairwise'],
+                'another': 1
+            }),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.format_auth(token))
+
+        assert resp.status_code == 201
+        content = json.loads(resp.content.decode('utf-8'))
+        assert 'client_id' in content
+        assert 'client_secret' in content
+        client_id = content.pop('client_id')
+        client_secret = content.pop('client_secret')
+        assert content == {
+            'another': 1,
+            'client_secret_expires_at': 0,
+            'redirect_uris': ['http://test.org/auth/complete'],
+            'subject_type': ['pairwise'],
+        }
+
+        client = OpenIDClient.objects.get(client_id=client_id)
+        assert client.check_client_secret(client_secret)
+
+        from django.conf import settings
+        assert client.sub_hash == hashlib.sha256(('test.org' + settings.SECRET_KEY).encode('utf-8')).hexdigest()
 
     @pytest.fixture()
     def openid_client(self):

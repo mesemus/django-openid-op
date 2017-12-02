@@ -216,7 +216,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
     def create_id_token(request, client, authentication_parameters, db_access_token, user):
         id_token = {
             "iss": request.build_absolute_uri('/'),
-            "sub": request.user.username,
+            "sub": client.make_sub(request.user.username),
             "aud": [client.client_id],
             "exp": int(db_access_token.expiration.timestamp()),
             # the time at which user was authenticated - we do not have this stored anywhere ...

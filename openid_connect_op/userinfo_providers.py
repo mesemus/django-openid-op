@@ -70,7 +70,7 @@ class DjangoProfileProvider(UserInfoProvider):
             'family_name': user.last_name,
             'given_name': user.first_name,
             'preferred_username': user.username,
-            'sub': user.username,
+            'sub': db_access_token.client.make_sub(user.username),
             # 'middle_name' not set on django user,
             # 'nickname' not set on django user,
             # 'profile' not set on django user,

@@ -70,6 +70,14 @@ class OpenIDClient(models.Model):
                                verbose_name='List of allowed claims. If None, '
                                             'all claims from allowed scopes are returned')
 
+    sub_hash = models.CharField(max_length=256, null=True, blank=True,
+                                verbose_name="If set, <<sub>> values (that is, username) will be concatenated with this value and sha256")
+
+    def make_sub(self, original_sub):
+        if not self.sub_hash:
+            return original_sub
+        return hashlib.sha256((original_sub + self.sub_hash).encode('utf-8')).hexdigest()
+
     def set_client_secret(self, password):
         if password is None:
             raise AttributeError('Password can not be empty')
