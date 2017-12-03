@@ -8,7 +8,6 @@ class WellKnownView(View):
     defaults = {
         "token_endpoint_auth_methods_supported":
             ["client_secret_basic"],
-        "scopes_supported": ['openid'] + settings.OPENID_USERINFO_PROVIDERS.supported_scopes,
         "response_types_supported":
             ["code"],
         "subject_types_supported":
@@ -21,7 +20,6 @@ class WellKnownView(View):
             ["page"],
         "claim_types_supported":
             ["normal"],
-        "claims_supported": settings.OPENID_USERINFO_PROVIDERS.supported_claims + ['iss', 'auth_time', 'acr'],
         "claims_parameter_supported":
             False,
         "ui_locales_supported":
@@ -40,5 +38,8 @@ class WellKnownView(View):
         resp['jwks_uri'] = request.build_absolute_uri(reverse('openid_connect_op:jwks'))
         resp['registration_endpoint'] = request.build_absolute_uri(reverse('openid_connect_op:register'))
         resp['end_session_endpoint'] = request.build_absolute_uri(reverse('openid_connect_op:logout'))
+
+        resp["scopes_supported"] = ['openid'] + settings.OPENID_USERINFO_PROVIDERS.supported_scopes
+        resp["claims_supported"] = settings.OPENID_USERINFO_PROVIDERS.supported_claims + ['iss', 'auth_time', 'acr']
 
         return JsonResponse(resp)
