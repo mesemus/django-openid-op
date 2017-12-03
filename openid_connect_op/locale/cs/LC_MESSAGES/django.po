@@ -1,0 +1,32 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-12-03 06:53-0600\n"
+"PO-Revision-Date: 2017-12-03 13:55+0100\n"
+"Language: cs\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"X-Generator: Poedit 2.0.1\n"
+
+#: openid_connect_op/apps.py:9
+msgid "OpenID Connect Provider"
+msgstr "Poskytovatel přihlášení OpenID Connect"
+
+#: openid_connect_op/templates/django-open-id/consent.html:6
+msgid "To continue, you have to accept the following terms:"
+msgstr "Před pokračováním musíte odsouhlasit následující podmínky používání aplikace:"
+
+#: openid_connect_op/templates/django-open-id/consent.html:11
+#, python-format
+msgid "I accept the terms and want to continue to %(client_name)s"
+msgstr "Přijímám podmínky používání a chci pokračovat k aplikaci %(client_name)s"
