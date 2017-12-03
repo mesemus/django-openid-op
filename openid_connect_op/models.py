@@ -318,7 +318,10 @@ class OpenIDKey(models.Model):
 
     @property
     def key(self):
-        return CryptoTools.decrypt(self.encrypted_key_value.tobytes(),
+        encrypted_key_value = self.encrypted_key_value
+        if hasattr(encrypted_key_value, 'tobytes'):
+            encrypted_key_value = encrypted_key_value.tobytes()
+        return CryptoTools.decrypt(encrypted_key_value,
                                    key=settings.OPENID_CONNECT_OP_DB_ENCRYPT_KEY)
 
     @key.setter
