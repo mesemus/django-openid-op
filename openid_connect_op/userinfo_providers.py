@@ -153,14 +153,15 @@ class UserInfoProviderRegistry:
             if claim in self.claim_providers:
                 for provider in self.claim_providers[claim]:
                     if provider not in cache:
-                        provider_data = provider.get_claims(db_access_token, claim)
+                        provider_data = provider.get_claims(db_access_token)
                         cache[provider] = provider_data
                     else:
                         provider_data = cache[provider]
 
                     if provider_data is not None:
                         if claim not in provider_data:
-                            raise ValueError('Provider "%s" registered for claim "%s" has returned different claim!')
+                            raise ValueError('Provider "%s" registered for claim "%s" has returned different claim: %s' %
+                                             (provider, claim, provider_data))
                         if provider_data[claim]:
                             # set only claim with value
                             claim_values[claim] = provider_data[claim]
