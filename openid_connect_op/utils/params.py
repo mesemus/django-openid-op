@@ -58,7 +58,8 @@ class Parameters:
 
     REQUIRED = ParameterType(required=True)
     OPTIONAL = ParameterType(required=False)
-    ZLIB_DICT = b'openidhttp,,,,'
+    # ZLIB_DICT = b'openidhttp,,,,'
+    ZLIB_DICT = b''
 
     def __init__(self, param_values):
         self.errors = []
