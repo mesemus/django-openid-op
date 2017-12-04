@@ -21,7 +21,7 @@ For more details see https://github.com/mesemus/django-openid-op
 
 setup(
     name='django-openid-op',
-    version='0.1.14',
+    version='0.1.15',
     packages=find_packages(exclude='tests'),
     include_package_data=True,
     description='A django database based implementation of a subset of openid protocol, targeted at python3.6 and django 1.11+',

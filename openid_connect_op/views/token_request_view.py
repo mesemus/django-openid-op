@@ -97,7 +97,9 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
                              error_description='Required parameter with name "refresh_token" is not present')
         try:
             refresh_token = OpenIDToken.objects.get(
-                token_hash=OpenIDToken.get_token_hash(self.request_parameters.refresh_token))
+                token_hash=OpenIDToken.get_token_hash(self.request_parameters.refresh_token),
+                token_type=OpenIDToken.TOKEN_TYPE_REFRESH_TOKEN,
+                client=client)
             if refresh_token.expired:
                 raise OAuthError(error='invalid_grant', error_description='Refresh token expired')
         except OpenIDToken.DoesNotExist:

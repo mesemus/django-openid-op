@@ -39,6 +39,9 @@ class WellKnownView(View):
         resp['registration_endpoint'] = request.build_absolute_uri(reverse('openid_connect_op:register'))
         resp['end_session_endpoint'] = request.build_absolute_uri(reverse('openid_connect_op:logout'))
 
+        for service_name, service_reverse in getattr(settings, 'OPENID_EXTRA_SERVICES', {}).items():
+            resp[service_name] = request.build_absolute_uri(reverse(service_reverse))
+
         resp["scopes_supported"] = ['openid'] + settings.OPENID_USERINFO_PROVIDERS.supported_scopes
         resp["claims_supported"] = settings.OPENID_USERINFO_PROVIDERS.supported_claims + ['iss', 'auth_time', 'acr']
 
