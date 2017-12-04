@@ -61,6 +61,7 @@ class OpenIDClient(models.Model):
 
     client_hashed_secret = models.CharField(max_length=128)
 
+    client_code = models.CharField(max_length=32, null=True, blank=True)
     client_name = models.CharField(max_length=128)
 
     allowed_scopes = JSONField(null=True, blank=True,
