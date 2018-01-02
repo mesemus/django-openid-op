@@ -2,6 +2,7 @@ import hashlib
 import json
 
 import pytest
+import re
 from django.contrib.auth.models import User
 from django.core.management import call_command
 
@@ -68,6 +69,10 @@ class TestClientRegistrationRequest:
         assert 'client_secret' in content
         client_id = content.pop('client_id')
         client_secret = content.pop('client_secret')
+        registration_access_token = content.pop('registration_access_token')
+        assert len(registration_access_token) > 32
+        registration_client_uri = content.pop('registration_client_uri')
+        assert registration_client_uri.startswith('http://testserver/openid/client_configuration/')
         assert content == {
             'another': 1,
             'client_secret_expires_at': 0,
@@ -98,6 +103,10 @@ class TestClientRegistrationRequest:
         assert 'client_secret' in content
         client_id = content.pop('client_id')
         client_secret = content.pop('client_secret')
+        registration_access_token = content.pop('registration_access_token')
+        assert len(registration_access_token) > 32
+        registration_client_uri = content.pop('registration_client_uri')
+        assert registration_client_uri.startswith('http://testserver/openid/client_configuration/')
         assert content == {
             'another': 1,
             'client_secret_expires_at': 0,
@@ -110,6 +119,46 @@ class TestClientRegistrationRequest:
 
         from django.conf import settings
         assert client.sub_hash == hashlib.sha256(('test.org' + settings.SECRET_KEY).encode('utf-8')).hexdigest()
+
+    def test_client_configuration_service(self, client, openid_client, user):
+        token = OpenIDToken.create_token(openid_client, OpenIDToken.TOKEN_TYPE_CLIENT_DYNAMIC_REGISTRATION,
+                                         {}, 1e9, user)[0]
+        resp = client.post(
+            '/openid/register',
+            json.dumps({
+                'redirect_uris': [
+                    'http://test.org/auth/complete'
+                ],
+                'another': 1
+            }),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.format_auth(token))
+
+        content = json.loads(resp.content.decode('utf-8'))
+        registration_access_token = content.pop('registration_access_token')
+        registration_client_uri = content.pop('registration_client_uri')
+        client_id = content.pop('client_id')
+
+        resp = client.get(registration_client_uri, HTTP_AUTHORIZATION=self.format_auth(registration_access_token))
+        assert resp.status_code == 200
+        content = json.loads(resp.content.decode('utf-8'))
+
+        assert 'client_id' in content
+        assert 'client_secret' in content
+        new_client_id = content.pop('client_id')
+        content.pop('client_secret')
+        assert new_client_id == client_id
+        new_registration_access_token = content.pop('registration_access_token')
+        assert len(new_registration_access_token) > 32
+        new_registration_client_uri = content.pop('registration_client_uri')
+        assert new_registration_client_uri == registration_client_uri
+        assert registration_client_uri.startswith('http://testserver/openid/client_configuration/')
+        assert content == {
+            'another': 1,
+            'client_secret_expires_at': 0,
+            'redirect_uris': ['http://test.org/auth/complete']
+        }
+
 
     @pytest.fixture()
     def openid_client(self):

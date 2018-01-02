@@ -74,6 +74,8 @@ class OpenIDClient(models.Model):
     sub_hash = models.CharField(max_length=256, null=True, blank=True,
                                 verbose_name="If set, <<sub>> values (that is, username) will be concatenated with this value and sha256")
 
+    client_registration_data = JSONField(default={})
+
     def make_sub(self, original_sub):
         if not self.sub_hash:
             return original_sub
@@ -274,6 +276,9 @@ class OpenIDToken(models.Model):
     TOKEN_TYPE_REFRESH_TOKEN = 'REFR'
     TOKEN_TYPE_ID_TOKEN = 'ID'
     TOKEN_TYPE_CLIENT_DYNAMIC_REGISTRATION = 'CDR'
+    TOKEN_TYPE_CLIENT_CONFIGURATION_TOKEN = 'CCF'
+
+    INFINITE_TTL = 99999999999
 
     @classmethod
     def create_token(cls, client, token_type, token_data, ttl, user, root_db_token=None, token=None):

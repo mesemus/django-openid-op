@@ -5,6 +5,8 @@ from urllib.parse import urlparse
 
 import requests
 from django.conf import settings
+from django.contrib.auth.models import User
+from django.urls import reverse
 
 try:
     import secrets
@@ -79,22 +81,20 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
             client_id = secrets.token_urlsafe(32)
             client_secret = secrets.token_urlsafe(32)
 
+            client_data = json.loads(request.body.decode('utf-8'))
+
             client = OpenIDClient.objects.create(
                 client_id=client_id,
                 redirect_uris='\n'.join(self.request_parameters.redirect_uris),
                 client_auth_type=OpenIDClient.CLIENT_AUTH_TYPE_BASIC,
                 client_name=self.request_parameters.client_name,
-                sub_hash = pairwise_key
+                sub_hash = pairwise_key,
+                client_registration_data=client_data
             )
             client.set_client_secret(client_secret)
             client.save()
 
-            resp = json.loads(request.body.decode('utf-8'))
-            resp.update({
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "client_secret_expires_at": 0,
-            })
+            resp = self.make_registration_response(request, client, client_secret)
 
             return JsonResponse(resp, status=201)
 
@@ -103,3 +103,26 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
                 'error': err.error,
                 'error_description': err.error_description
             })
+
+    @staticmethod
+    def make_registration_response(request, client, client_secret):
+        resp = {}
+        resp.update(client.client_registration_data)
+        resp.update({
+            "client_id": client.client_id,
+            "client_secret": client_secret,
+            "client_secret_expires_at": 0,
+        })
+        if request.openid_access_token:
+            user = request.openid_access_token.user
+        else:
+            user = User.objects.get(username='admin')
+        registration_access_token, registration_access_db_token = \
+            OpenIDToken.create_token(client, OpenIDToken.TOKEN_TYPE_CLIENT_CONFIGURATION_TOKEN,
+                                     {}, OpenIDToken.INFINITE_TTL, user)
+        resp.update({
+            'registration_access_token': registration_access_token,
+            'registration_client_uri': request.build_absolute_uri(
+                reverse('openid_connect_op:client_configuration', kwargs=dict(client_id=client.client_id)))
+        })
+        return resp
