@@ -76,6 +76,8 @@ class OpenIDClient(models.Model):
 
     client_registration_data = JSONField(default={})
 
+    jwks = JSONField(default={})
+
     def make_sub(self, original_sub):
         if not self.sub_hash:
             return original_sub
