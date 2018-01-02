@@ -58,10 +58,16 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
             })
         except BaseException as err:
             traceback.print_exc()
-            return self.oauth_send_answer(request, {
-                'error': 'unknown_error',
-                'error_description': 'Unknown error occurred at %s, check the logs' % timezone.now()
-            })
+            if settings.DEBUG:
+                return self.oauth_send_answer(request, {
+                    'error': 'unknown_error',
+                    'error_description': 'Unknown error: %s' % traceback.format_exc()
+                })
+            else:
+                return self.oauth_send_answer(request, {
+                    'error': 'unknown_error',
+                    'error_description': 'Unknown error occurred at %s, check the logs' % timezone.now()
+                })
 
     def process_authorization_code_grant_type(self, request, client):
 
