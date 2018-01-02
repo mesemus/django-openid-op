@@ -222,12 +222,10 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
 
     @staticmethod
     def create_id_token(request, client, authentication_parameters, db_access_token, user):
-        if request.user.is_anonymous:
-            raise ValueError('Anonymous user can not request id token')
 
         id_token = {
             "iss": request.build_absolute_uri('/'),
-            "sub": client.make_sub(request.user.username),
+            "sub": client.make_sub(user.username),
             "aud": [client.client_id],
             "exp": int(db_access_token.expiration.timestamp()),
             # the time at which user was authenticated - we do not have this stored anywhere ...
