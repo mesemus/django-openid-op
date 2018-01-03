@@ -1,10 +1,10 @@
-import base64
 import hmac
 import struct
 import time
 
 import zlib
 from Cryptodome.Cipher import AES
+from jwcrypto.common import base64url_decode, base64url_encode
 
 
 class CryptoTools:
@@ -42,14 +42,13 @@ class CryptoTools:
 
         if key is None:
             raise AttributeError('Key can not be None')
+        key = base64url_decode(key.get_op_key('encrypt'))
         assert len(key) == 16
 
         cipher = AES.new(key, AES.MODE_GCM)
         cipher_text, tag = cipher.encrypt_and_digest(message)
         encrypted_message = b''.join([cipher.nonce, tag, cipher_text])
-        ret = base64.urlsafe_b64encode(encrypted_message)
-        while ret[-1] == ord(b'='):
-            ret = ret[:-1]
+        ret = base64url_encode(encrypted_message)
         return ret
 
     @staticmethod
@@ -65,12 +64,9 @@ class CryptoTools:
         """
         if key is None:
             raise AttributeError('Key can not be None')
+        key = base64url_decode(key.get_op_key('decrypt'))
 
-        if len(message) % 4 == 2:
-            message += b'=='
-        elif len(message) % 4 == 3:
-            message += b'='
-        encrypted_message = base64.urlsafe_b64decode(message)
+        encrypted_message = base64url_decode(message)
         # nonce and tag are always 16 bytes long
         nonce, tag, cipher_text = encrypted_message[:16], encrypted_message[16:32], encrypted_message[32:]
         cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)

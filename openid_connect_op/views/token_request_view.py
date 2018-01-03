@@ -10,7 +10,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from ratelimit.mixins import RatelimitMixin
 
-from openid_connect_op.models import OpenIDClient, OpenIDKey
+from openid_connect_op.models import OpenIDClient
 from openid_connect_op.utils.jwt import JWTTools
 from . import OAuthRequestMixin
 from .errors import OAuthError

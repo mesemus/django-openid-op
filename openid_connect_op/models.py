@@ -6,6 +6,7 @@ import re
 from django.conf import settings
 from django.db.models import Count, Sum
 from jsonfield.fields import JSONField
+from jwcrypto.jwk import JWKSet
 
 from openid_connect_op.utils.crypto import CryptoTools
 
@@ -76,7 +77,7 @@ class OpenIDClient(models.Model):
 
     client_registration_data = JSONField(default={})
 
-    jwks = JSONField(default={})
+    jwks = models.TextField(default='{}')
 
     def make_sub(self, original_sub):
         if not self.sub_hash:
@@ -210,8 +211,15 @@ class OpenIDClient(models.Model):
     def self_instance():
         return OpenIDClient.objects.get(client_id=OpenIDClient.SELF_CLIENT_ID)
 
-    def get_key(self, key_type):
-        return OpenIDKey.objects.get(client=self, key_type=key_type).key
+    def get_keys(self):
+        if self.jwks:
+            return JWKSet.from_json(self.jwks)
+
+    def get_key(self, alg):
+        jwks = self.get_keys()
+        for key in jwks['keys']:
+            if key._params['alg'] == alg:
+                return key
 
     def __str__(self):
         return self.client_name
@@ -308,34 +316,3 @@ class OpenIDToken(models.Model):
             root_token=root_db_token)
 
         return token, db_token
-
-
-class OpenIDKey(models.Model):
-    client = models.ForeignKey(OpenIDClient, on_delete=models.CASCADE)
-
-    JWK_RSA_PUBLIC_KEY = 'jwk_rsa_public'
-    JWK_RSA_PRIVATE_KEY = 'jwk_rsa_private'
-    AES_KEY = 'aes'
-
-    key_type = models.CharField(max_length=16, choices=(
-        (JWK_RSA_PRIVATE_KEY, 'JWK RSA private key'),
-        (JWK_RSA_PUBLIC_KEY, 'JWK RSA public key'),
-        (AES_KEY, 'AES key')
-    ))
-    encrypted_key_value = models.BinaryField()
-
-    @property
-    def key(self):
-        encrypted_key_value = self.encrypted_key_value
-        if hasattr(encrypted_key_value, 'tobytes'):
-            encrypted_key_value = encrypted_key_value.tobytes()
-        return CryptoTools.decrypt(encrypted_key_value,
-                                   key=settings.OPENID_CONNECT_OP_DB_ENCRYPT_KEY)
-
-    @key.setter
-    def key(self, value):
-        self.encrypted_key_value = OpenIDKey.encrypt_key(value)
-
-    @staticmethod
-    def encrypt_key(value):
-        return CryptoTools.encrypt(value, key=settings.OPENID_CONNECT_OP_DB_ENCRYPT_KEY)

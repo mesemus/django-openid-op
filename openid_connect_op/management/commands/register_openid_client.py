@@ -6,7 +6,7 @@ except ImportError:
 import jwcrypto.jwk as jwk
 from django.core.management import BaseCommand
 
-from openid_connect_op.models import OpenIDClient, OpenIDKey
+from openid_connect_op.models import OpenIDClient
 
 
 class Command(BaseCommand):

@@ -86,31 +86,33 @@ def generate_jwt_patched(claims, priv_key=None,
 class JWTTools:
 
     @staticmethod
-    def generate_jwt(payload):
-        from openid_connect_op.models import OpenIDKey, OpenIDClient
-        cipher = getattr(settings, 'OPENID_JWT_CIPHER', 'RS256')
+    def generate_jwt(payload, for_client=None):
+        if for_client is None:
+            sign_alg = 'RS256'
+        else:
+            sign_alg = for_client.client_registration_data.get('id_token_signed_response_alg', 'RS256')
+
+        return JWTTools.generate_jwt_with_sign_alg(payload, sign_alg)
+
+    @staticmethod
+    def generate_jwt_with_sign_alg(payload, sign_alg):
+        from openid_connect_op.models import OpenIDClient
+        client = OpenIDClient.self_instance()
+        sign_key = client.get_key(sign_alg)
         extra_headers = {
-            'kid': JWTTools.kid()
+            'kid': sign_key.key_id
         }
         return generate_jwt_patched(payload,
-                                    jwk.JWK.from_pem(
-                                        OpenIDClient.self_instance().get_key(OpenIDKey.JWK_RSA_PRIVATE_KEY)),
-                                    cipher, extra_headers=extra_headers)
+                                    sign_key,
+                                    sign_key._params['alg'],
+                                    extra_headers=extra_headers)
 
     @staticmethod
-    def validate_jwt(token):
-        from openid_connect_op.models import OpenIDKey, OpenIDClient
-        cipher = getattr(settings, 'OPENID_JWT_CIPHER', 'RS256')
-        return jwt.verify_jwt(token,
-                              jwk.JWK.from_pem(OpenIDClient.self_instance().get_key(OpenIDKey.JWK_RSA_PUBLIC_KEY)),
-                              [cipher])
+    def validate_jwt(token, client=None):
+        from openid_connect_op.models import OpenIDClient
+        if client is None:
+            client = OpenIDClient.self_instance()
 
-    @staticmethod
-    def get_jwks():
-        from openid_connect_op.models import OpenIDKey, OpenIDClient
-        return jwk.JWK.from_pem(OpenIDClient.self_instance().get_key(OpenIDKey.JWK_RSA_PUBLIC_KEY)).export_public()
-
-    @staticmethod
-    def kid():
-        from openid_connect_op.models import OpenIDKey, OpenIDClient
-        return jwk.JWK.from_pem(OpenIDClient.self_instance().get_key(OpenIDKey.JWK_RSA_PUBLIC_KEY)).key_id
+        header, __ = jwt.process_jwt(token)
+        key = client.get_key(header.get('alg', 'RS256'))
+        return jwt.verify_jwt(token, key, [key._params['alg']])

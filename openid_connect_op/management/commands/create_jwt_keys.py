@@ -1,3 +1,5 @@
+import json
+
 from openid_connect_op.utils.crypto import CryptoTools
 
 try:
@@ -9,7 +11,7 @@ import jwcrypto.jwk as jwk
 from django.conf import settings
 from django.core.management import BaseCommand
 
-from openid_connect_op.models import OpenIDClient, OpenIDKey
+from openid_connect_op.models import OpenIDClient
 
 
 class Command(BaseCommand):
@@ -17,25 +19,20 @@ class Command(BaseCommand):
         """
         Creates JWT keys at the location pointed by settings.OPENID_JWT_PRIVATE_KEY, settings.OPENID_JWT_PUBLIC_KEY
         """
-        key = jwk.JWK.generate(kty='RSA', size=2048)
-        priv_pem = key.export_to_pem(private_key=True, password=None)
-        pub_pem = key.export_to_pem()
-        aes = secrets.token_urlsafe(nbytes=16).encode('ascii')[:16]
+        jwks = jwk.JWKSet()
+
+        jwks['keys'].add(jwk.JWK.generate(kty='RSA', alg='RS256', size=2048, kid=secrets.token_urlsafe(32)))
+        jwks['keys'].add(jwk.JWK.generate(kty='RSA', alg='RS512', size=4096, kid=secrets.token_urlsafe(32)))
+        jwks['keys'].add(jwk.JWK.generate(kty='EC', crv='P-256', alg='ES256', kid=secrets.token_urlsafe(32)))
+        jwks['keys'].add(jwk.JWK.generate(kty='EC', crv='P-384', alg='ES384', kid=secrets.token_urlsafe(32)))
+        jwks['keys'].add(jwk.JWK.generate(kty='EC', crv='P-521', alg='ES512', kid=secrets.token_urlsafe(32)))
+        jwks['keys'].add(jwk.JWK.generate(kty='oct', alg='AES', size=16*8, kid=secrets.token_urlsafe(32)))
 
         client = OpenIDClient.objects.get_or_create(client_id=OpenIDClient.SELF_CLIENT_ID,
                                                     defaults={
                                                         'client_auth_type': OpenIDClient.CLIENT_AUTH_TYPE_INVALID,
                                                         'client_name': 'This server'
                                                     })[0]
-
-        OpenIDKey.objects.update_or_create(client=client, key_type=OpenIDKey.JWK_RSA_PUBLIC_KEY, defaults={
-            'encrypted_key_value': OpenIDKey.encrypt_key(pub_pem)
-        })
-
-        OpenIDKey.objects.update_or_create(client=client, key_type=OpenIDKey.JWK_RSA_PRIVATE_KEY, defaults={
-            'encrypted_key_value': OpenIDKey.encrypt_key(priv_pem)
-        })
-
-        OpenIDKey.objects.update_or_create(client=client, key_type=OpenIDKey.AES_KEY, defaults={
-            'encrypted_key_value': OpenIDKey.encrypt_key(aes)
-        })
+        client.jwks = json.dumps(json.loads(jwks.export(private_keys=True)), indent=True)
+        client.save()
+        print(client.jwks)

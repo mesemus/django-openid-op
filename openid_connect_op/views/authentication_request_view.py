@@ -11,7 +11,7 @@ from django.utils.http import urlencode
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from openid_connect_op.models import OpenIDClient, OpenIDKey, OpenIDToken
+from openid_connect_op.models import OpenIDClient, OpenIDToken
 from openid_connect_op.signals import before_user_consent
 from openid_connect_op.views.parameters import AuthenticationParameters
 from . import OAuthRequestMixin
@@ -103,7 +103,7 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
         try:
             if 'authp' in request.GET:
                 self.request_parameters = AuthenticationParameters.unpack(
-                    request.GET['authp'].encode('ASCII'), key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY))
+                    request.GET['authp'], key=OpenIDClient.self_instance().get_key('AES'))
             else:
                 self.parse_request_parameters(request, AuthenticationParameters)
                 if not hasattr(self.request_parameters, 'redirect_uri') or not self.request_parameters.redirect_uri:
@@ -149,6 +149,6 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
     def get_this_url_with_params(self, request):
         server, query = splitquery(request.build_absolute_uri())
         params = {
-            'authp': self.request_parameters.pack(key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY))
+            'authp': self.request_parameters.pack(key=OpenIDClient.self_instance().get_key('AES'))
         }
         return server + '?' + urlencode(params)

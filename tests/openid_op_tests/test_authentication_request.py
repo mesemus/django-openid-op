@@ -6,7 +6,7 @@ import re
 from django.contrib.auth.models import User
 from django.core.management import call_command
 
-from openid_connect_op.models import OpenIDClient, OpenIDKey
+from openid_connect_op.models import OpenIDClient
 from openid_connect_op.views.parameters import AuthenticationParameters
 
 
@@ -127,8 +127,8 @@ class TestAuthenticationRequest:
         assert 'authp' in next_query
 
         # check that ?authp param contains correctly encrypted value
-        AuthenticationParameters.unpack(next_query['authp'][0].encode('utf-8'),
-                                        key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY))
+        AuthenticationParameters.unpack(next_query['authp'][0],
+                                        key=OpenIDClient.self_instance().get_key('AES'))
 
     @pytest.fixture
     def user(self):
@@ -221,8 +221,8 @@ class TestAuthenticationRequest:
         assert 'authp' in next_query
 
         # check that ?authp param contains correctly encrypted value
-        AuthenticationParameters.unpack(next_query['authp'][0].encode('utf-8'),
-                                        key=OpenIDClient.self_instance().get_key(OpenIDKey.AES_KEY))
+        AuthenticationParameters.unpack(next_query['authp'][0],
+                                        key=OpenIDClient.self_instance().get_key('AES'))
 
     def test_form_post_response_mode(self, client, client_config, user):
         client.force_login(user)
