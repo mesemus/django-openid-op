@@ -46,6 +46,9 @@ class TokenParameters(Parameters):
         ('client_id', Parameters.OPTIONAL),
         ('client_secret', Parameters.OPTIONAL),
 
+        ('client_assertion_type', Parameters.OPTIONAL),
+        ('client_assertion', Parameters.OPTIONAL),
+
         # refresh token
         ('refresh_token', Parameters.OPTIONAL),  # required for refresh_token
         ('scope', Parameters.OPTIONAL)

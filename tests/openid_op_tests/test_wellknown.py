@@ -34,7 +34,7 @@ class TestWellKnownURL:
             'token_endpoint': 'http://testserver/openid/token',
             'end_session_endpoint': 'http://testserver/openid/logout',
             'registration_endpoint': 'http://testserver/openid/register',
-            'token_endpoint_auth_methods_supported': ['client_secret_basic'],
+            'token_endpoint_auth_methods_supported': ['client_secret_basic', 'private_key_jwt'],
             'ui_locales_supported': ['en-US', 'cs-CZ'],
             'userinfo_signing_alg_values_supported': ['RS256'],
             'userinfo_endpoint': 'http://testserver/openid/userinfo'

@@ -1,7 +1,5 @@
 import json
 
-from openid_connect_op.utils.crypto import CryptoTools
-
 try:
     import secrets
 except ImportError:

@@ -214,12 +214,24 @@ class OpenIDClient(models.Model):
     def get_keys(self):
         if self.jwks:
             return JWKSet.from_json(self.jwks)
+        return JWKSet()
 
-    def get_key(self, alg):
+    def get_key(self, alg=None, kid=None):
         jwks = self.get_keys()
+        ret = []
         for key in jwks['keys']:
-            if key._params['alg'] == alg:
-                return key
+            if alg and key._params['alg'] != alg:
+                continue
+            if kid and key.key_id != kid:
+                continue
+            ret.append(key)
+        if len(ret) > 1:
+            raise AttributeError('Have more keys with the given alg %s and kid %s' % (alg, kid))
+
+        if not ret:
+            raise AttributeError('Could not find key with alg %s and kid %s' % (alg, kid))
+
+        return ret[0]
 
     def __str__(self):
         return self.client_name

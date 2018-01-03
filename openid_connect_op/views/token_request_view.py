@@ -159,6 +159,11 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         auth_header = request.META.get('HTTP_AUTHORIZATION')
         if auth_header and auth_header.startswith('Basic '):
             return self.authenticate_with_http_basic(auth_header)
+        if self.request_parameters.client_assertion_type == 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer':
+            if not self.request_parameters.client_assertion:
+                raise OAuthError(error='unsupported_authentication_method',
+                                 error_description='Need client_assertion if client_assertion_type is jwt-bearer')
+            return self.authenticate_with_jwt_bearer()
         if self.request_parameters.client_secret:
             return self.authenticate_with_client_secret()
         if self.request_parameters.client_id:
@@ -205,6 +210,37 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
             pass
 
         raise OAuthError(error='unauthorized_client', error_description='Bad client_id or client_secret')
+
+    def authenticate_with_jwt_bearer(self):
+        assertion = self.request_parameters.client_assertion
+        payload = JWTTools.unverified_jwt_payload(assertion)
+
+        for req in ('sub', 'iss', 'aud', 'jti', 'exp'):
+            if req not in payload:
+                raise OAuthError(error='invalid_request',
+                                 error_description='The assertion token must contain %s field' % req)
+
+        if payload['iss'] != payload['sub']:
+            raise OAuthError(error='invalid_request',
+                             error_description='The assertion token\'s iss and sub fields differ')
+
+        auri = self.request.build_absolute_uri(self.request.path)
+        if auri != payload['aud']:
+            raise OAuthError(error='invalid_request',
+                             error_description='The assertion token is for audience %s, I am %s' % (
+                             payload['auth'], auri))
+
+        client = OpenIDClient.objects.filter(client_id=payload['iss']).first()
+        if not client:
+            raise OAuthError(error='invalid_request',
+                             error_description='Client with id %s is not registered on this server' % payload['iss'])
+        try:
+            JWTTools.validate_jwt(assertion, client)
+        except Exception as e:
+            raise OAuthError(error='invalid_request',
+                             error_description='JWT validation failed: %s' % e)
+
+        return client
 
     def try_null_authentication(self):
         if not self.request_parameters.client_id:

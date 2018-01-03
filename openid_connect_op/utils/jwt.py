@@ -86,18 +86,19 @@ def generate_jwt_patched(claims, priv_key=None,
 class JWTTools:
 
     @staticmethod
-    def generate_jwt(payload, for_client=None):
+    def generate_jwt(payload, for_client=None, ttl=None, from_client=None):
         if for_client is None:
             sign_alg = 'RS256'
         else:
             sign_alg = for_client.client_registration_data.get('id_token_signed_response_alg', 'RS256')
 
-        return JWTTools.generate_jwt_with_sign_alg(payload, sign_alg)
+        return JWTTools.generate_jwt_with_sign_alg(payload, sign_alg, ttl=ttl, client=from_client)
 
     @staticmethod
-    def generate_jwt_with_sign_alg(payload, sign_alg):
+    def generate_jwt_with_sign_alg(payload, sign_alg, ttl=None, client=None):
         from openid_connect_op.models import OpenIDClient
-        client = OpenIDClient.self_instance()
+        if not client:
+            client = OpenIDClient.self_instance()
         sign_key = client.get_key(sign_alg)
         extra_headers = {
             'kid': sign_key.key_id
@@ -105,7 +106,8 @@ class JWTTools:
         return generate_jwt_patched(payload,
                                     sign_key,
                                     sign_key._params['alg'],
-                                    extra_headers=extra_headers)
+                                    extra_headers=extra_headers,
+                                    lifetime=ttl)
 
     @staticmethod
     def validate_jwt(token, client=None):
@@ -114,5 +116,9 @@ class JWTTools:
             client = OpenIDClient.self_instance()
 
         header, __ = jwt.process_jwt(token)
-        key = client.get_key(header.get('alg', 'RS256'))
+        key = client.get_key(alg=header.get('alg', 'RS256'), kid=header.get('kid', None))
         return jwt.verify_jwt(token, key, [key._params['alg']])
+
+    @staticmethod
+    def unverified_jwt_payload(token):
+        return jwt.process_jwt(token)[1]
