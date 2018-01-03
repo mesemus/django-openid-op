@@ -226,7 +226,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
 
         auri = self.request.build_absolute_uri(self.request.path)
         for aud in payload['aud']:
-            if auri == payload['aud']:
+            if auri == aud:
                 break
         else:
             raise OAuthError(error='invalid_request',
