@@ -87,6 +87,7 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
                 jwks = requests.get(client_data['jwks_uri']).json()
             else:
                 jwks = {}
+            jwks = json.dumps(jwks, indent=True)
 
             client = OpenIDClient.objects.create(
                 client_id=client_id,
