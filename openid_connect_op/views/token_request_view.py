@@ -225,10 +225,13 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
                              error_description='The assertion token\'s iss and sub fields differ')
 
         auri = self.request.build_absolute_uri(self.request.path)
-        if auri != payload['aud']:
+        for aud in payload['aud']:
+            if auri == payload['aud']:
+                break
+        else:
             raise OAuthError(error='invalid_request',
                              error_description='The assertion token is for audience %s, I am %s' % (
-                             payload['auth'], auri))
+                             payload['aud'], auri))
 
         client = OpenIDClient.objects.filter(client_id=payload['iss']).first()
         if not client:

@@ -51,7 +51,7 @@ class TestTokenRequestPrivateJWT:
         token = {
             'iss': client_config.client_id,
             'sub': client_config.client_id,
-            'aud': 'http://testserver/openid/token',
+            'aud': ['http://testserver/openid/token'],
         }
         jwt_token = JWTTools.generate_jwt(token, client_config, datetime.timedelta(seconds=60),
                                           from_client=client_config)
