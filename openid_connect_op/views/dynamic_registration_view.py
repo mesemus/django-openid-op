@@ -88,6 +88,7 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
             else:
                 jwks = {}
             jwks = json.dumps(jwks, indent=True)
+            print("registered jwks", jwks)
 
             client = OpenIDClient.objects.create(
                 client_id=client_id,
