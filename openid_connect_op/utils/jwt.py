@@ -117,7 +117,7 @@ class JWTTools:
 
         header, __ = jwt.process_jwt(token)
         key = client.get_key(alg=header.get('alg', 'RS256'), kid=header.get('kid', None))
-        return jwt.verify_jwt(token, key, [key._params['alg']])
+        return jwt.verify_jwt(token, key, [key._params.get('alg', 'RS256')])
 
     @staticmethod
     def unverified_jwt_payload(token):
