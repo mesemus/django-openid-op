@@ -85,8 +85,10 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
 
             if 'jwks_uri' in client_data:
                 jwks = requests.get(client_data['jwks_uri']).json()
+            elif 'jwks' in client_data:
+                jwks = client_data['jwks']
             else:
-                jwks = {}
+                jwks = {'keys': []}
             jwks = json.dumps(jwks, indent=True)
             print("registered jwks", jwks)
 
