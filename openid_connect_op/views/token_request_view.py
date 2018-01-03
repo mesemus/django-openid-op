@@ -240,6 +240,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         try:
             JWTTools.validate_jwt(assertion, client)
         except Exception as e:
+            traceback.print_exc()
             raise OAuthError(error='invalid_request',
                              error_description='JWT validation failed: %s' % e)
 
