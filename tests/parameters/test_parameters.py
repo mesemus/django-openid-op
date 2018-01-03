@@ -1,6 +1,12 @@
 import pytest
 
 from openid_connect_op.utils.params import Parameters, ParameterType
+try:
+    import secrets
+except ImportError:
+    import openid_connect_op.utils.secrets_backport as secrets
+
+import jwcrypto.jwk as jwk
 
 
 class Params(Parameters):
@@ -54,8 +60,9 @@ def test_pack_unpack():
         'b': 'def',
         'd': 'ba a'
     }).check_errors()
+    key = jwk.JWK.generate(kty='oct', alg='AES', size=16*8, kid=secrets.token_urlsafe(32))
     assert isinstance(p.d, list)
-    packed = p.pack(True, prefix=b'TOK', key=b'0123456789ABCDEF')
-    unpacked_p = Params.unpack(packed, prefix=b'TOK', key=b'0123456789ABCDEF')
+    packed = p.pack(True, prefix=b'TOK', key=key)
+    unpacked_p = Params.unpack(packed, prefix=b'TOK', key=key)
     assert p == unpacked_p
     assert str(p) == str(unpacked_p)

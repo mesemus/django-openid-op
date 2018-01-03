@@ -4,7 +4,15 @@ import pytest
 
 from openid_connect_op.utils.crypto import CryptoTools
 
-key = b'1234567890ABCDEF'
+try:
+    import secrets
+except ImportError:
+    import openid_connect_op.utils.secrets_backport as secrets
+
+import jwcrypto.jwk as jwk
+
+
+key = jwk.JWK.generate(kty='oct', alg='AES', size=16*8, kid=secrets.token_urlsafe(32))
 
 
 def test_crypt_decrypt():
