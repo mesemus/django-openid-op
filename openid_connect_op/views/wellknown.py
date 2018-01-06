@@ -29,6 +29,7 @@ class WellKnownView(View):
 
     def get(self, request, *args, **kwargs):
         resp = {}
+        print("returning wellknown")
         resp.update(self.defaults)
         resp.update(self.extra)
         resp['issuer'] = request.build_absolute_uri('/')
