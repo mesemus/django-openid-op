@@ -141,6 +141,7 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
     def get_auth_type(token_endpoint_auth_method):
         return {
             "client_secret_basic" : OpenIDClient.CLIENT_AUTH_TYPE_BASIC,
+            "client_secret_post" : OpenIDClient.CLIENT_AUTH_TYPE_POST,
             "private_key_jwt": OpenIDClient.CLIENT_AUTH_TYPE_PRIVATE_KEY_JWT,
             "client_secret_jwt": OpenIDClient.CLIENT_AUTH_TYPE_SECRET_JWT
         }[token_endpoint_auth_method or "client_secret_basic"]
