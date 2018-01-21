@@ -87,11 +87,18 @@ class OpenIDClient(models.Model):
     def set_client_secret(self, password):
         if password is None:
             raise AttributeError('Password can not be empty')
-        hasher = get_hasher('default')
-        salt = hasher.salt()
-        self.client_hashed_secret = hasher.encode(password, salt)
+        if self.client_auth_type == self.CLIENT_AUTH_TYPE_SECRET_JWT:
+            # need secret in plain text !
+            self.client_hashed_secret = password
+        else:
+            hasher = get_hasher('default')
+            salt = hasher.salt()
+            self.client_hashed_secret = hasher.encode(password, salt)
 
     def check_client_secret(self, raw_password):
+        if self.client_auth_type == self.CLIENT_AUTH_TYPE_SECRET_JWT:
+            return self.client_hashed_secret == raw_password
+
         # taken from User
         def setter(raw_password):
             self.set_client_secret(raw_password)

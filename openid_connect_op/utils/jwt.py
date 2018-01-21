@@ -115,6 +115,9 @@ class JWTTools:
         if client is None:
             client = OpenIDClient.self_instance()
 
+        if client.client_auth_type == OpenIDClient.CLIENT_AUTH_TYPE_SECRET_JWT:
+            return jwt.verify_jwt(token, client.client_hashed_secret, ['HS256'], checks_optional=True)
+
         header, __ = jwt.process_jwt(token)
         key = client.get_key(alg=header.get('alg', 'RS256'), kid=header.get('kid', None))
         return jwt.verify_jwt(token, key, [key._params.get('alg', 'RS256')], checks_optional=True)

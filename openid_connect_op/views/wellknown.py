@@ -7,7 +7,7 @@ from django.views import View
 class WellKnownView(View):
     defaults = {
         "token_endpoint_auth_methods_supported":
-            ["client_secret_basic", "private_key_jwt"],
+            ["client_secret_basic", "private_key_jwt", "client_secret_jwt"],
         "response_types_supported":
             ["code"],
         "subject_types_supported":
