@@ -95,7 +95,7 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
             client = OpenIDClient.objects.create(
                 client_id=client_id,
                 redirect_uris='\n'.join(self.request_parameters.redirect_uris),
-                client_auth_type=self.request_parameters.token_endpoint_auth_method,
+                client_auth_type=self.get_auth_type(self.request_parameters.token_endpoint_auth_method),
                 client_name=self.request_parameters.client_name,
                 sub_hash = pairwise_key,
                 client_registration_data=client_data,
@@ -136,3 +136,11 @@ class DynamicClientRegistrationView(RatelimitMixin, OAuthRequestMixin, View):
                 reverse('openid_connect_op:client_configuration', kwargs=dict(client_id=client.client_id)))
         })
         return resp
+
+    @staticmethod
+    def get_auth_type(token_endpoint_auth_method):
+        return {
+            "client_secret_basic" : OpenIDClient.CLIENT_AUTH_TYPE_BASIC,
+            "private_key_jwt": OpenIDClient.CLIENT_AUTH_TYPE_PRIVATE_KEY_JWT,
+            "client_secret_jwt": OpenIDClient.CLIENT_AUTH_TYPE_SECRET_JWT
+        }[token_endpoint_auth_method or "client_secret_basic"]
