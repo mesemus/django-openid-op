@@ -12,6 +12,9 @@ from calendar import timegm
 
 
 # need to add "kid" header which the original python_jwt can not do
+from openid_connect_op.models import OpenIDClient
+
+
 def generate_jwt_patched(claims, priv_key=None,
                          algorithm='PS512', lifetime=None, expires=None,
                          not_before=None,
@@ -89,6 +92,8 @@ class JWTTools:
     def generate_jwt(payload, for_client=None, ttl=None, from_client=None):
         if for_client is None:
             sign_alg = 'RS256'
+        elif for_client.client_auth_type == OpenIDClient.CLIENT_AUTH_TYPE_SECRET_JWT:
+            sign_alg = 'HS256'
         else:
             sign_alg = for_client.client_registration_data.get('id_token_signed_response_alg', 'RS256')
 
@@ -99,13 +104,20 @@ class JWTTools:
         from openid_connect_op.models import OpenIDClient
         if not client:
             client = OpenIDClient.self_instance()
-        sign_key = client.get_key(sign_alg)
-        extra_headers = {
-            'kid': sign_key.key_id
-        }
+        if client.client_auth_type == client.CLIENT_AUTH_TYPE_SECRET_JWT:
+            sign_key = jwk.JWK(kty="oct", use="sig", alg="HS256", k=base64url_encode(client.client_hashed_secret))
+            extra_headers = {}
+            alg = 'HS256'
+        else:
+            sign_key = client.get_key(sign_alg)
+            extra_headers = {
+                'kid': sign_key.key_id
+            }
+            alg = sign_key._params['alg']
+
         return generate_jwt_patched(payload,
                                     sign_key,
-                                    sign_key._params['alg'],
+                                    alg,
                                     extra_headers=extra_headers,
                                     lifetime=ttl)
 
@@ -116,7 +128,8 @@ class JWTTools:
             client = OpenIDClient.self_instance()
 
         if client.client_auth_type == OpenIDClient.CLIENT_AUTH_TYPE_SECRET_JWT:
-            return jwt.verify_jwt(token, client.client_hashed_secret, ['HS256'], checks_optional=True)
+            key = jwk.JWK(kty="oct", use="sig", alg="HS256", k=base64url_encode(client.client_hashed_secret))
+            return jwt.verify_jwt(token, key, ['HS256'], checks_optional=True)
 
         header, __ = jwt.process_jwt(token)
         key = client.get_key(alg=header.get('alg', 'RS256'), kid=header.get('kid', None))
