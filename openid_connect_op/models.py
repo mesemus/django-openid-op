@@ -106,7 +106,7 @@ class OpenIDClient(models.Model):
 
         return check_password(raw_password, self.client_hashed_secret, setter)
 
-    def has_user_agreement(self, user):
+    def has_user_agreement(self, user, auto_approve=True):
         """
         Checks if the user has approved sending his data (including, for example, roles, phone number etc.)
         to this client
@@ -116,7 +116,7 @@ class OpenIDClient(models.Model):
         """
         has_agreement = True
 
-        for agreement in self.get_unsigned_agreements(user, auto_approve=True):
+        for agreement in self.get_unsigned_agreements(user, auto_approve=auto_approve):
             if agreement.obligatory:
                 has_agreement = False
 

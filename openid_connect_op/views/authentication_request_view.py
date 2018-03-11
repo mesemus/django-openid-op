@@ -37,15 +37,15 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
             if self.should_login(request):
                 return self.authenticate(request)
 
-            should_sign_consent = self.should_request_user_consent(request, client)
-
             signal_responses = before_user_consent.send(type(client),
                                                         openid_client=client,
-                                                        user=request.user,
-                                                        consent_already_signed=not should_sign_consent)
+                                                        user=request.user)
+
             for resp in signal_responses:
                 if isinstance(resp[1], HttpResponse):
                     return resp[1]
+
+            should_sign_consent = self.should_request_user_consent(request, client)
 
             if should_sign_consent:
                 return self.request_user_consent(request, client)
