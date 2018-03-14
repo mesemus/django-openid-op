@@ -266,7 +266,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
 
         id_token = {
             "iss": request.build_absolute_uri('/'),
-            "sub": client.make_sub(user.username),
+            "sub": client.make_sub(settings.OPENID_SUB_PROVIDER(user, client)),
             "aud": [client.client_id],
             "exp": int(db_access_token.expiration.timestamp()),
             # the time at which user was authenticated - we do not have this stored anywhere ...

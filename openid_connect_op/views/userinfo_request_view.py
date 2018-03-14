@@ -27,5 +27,5 @@ class UserInfoView(RatelimitMixin, View):
             scopes = set(scope_param.split()).intersection(set(scopes))
 
         claim_values = settings.OPENID_USERINFO_PROVIDERS.get_claims(request.openid_access_token,
-                                                                    scopes, claims)
+                                                                     scopes, claims)
         return JsonResponse(claim_values)
