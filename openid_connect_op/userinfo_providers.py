@@ -4,6 +4,7 @@ import itertools
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 
+from django.conf import settings
 
 class UserInfoProvider:
     """
@@ -69,8 +70,8 @@ class DjangoProfileProvider(UserInfoProvider):
             'name': user.get_full_name(),
             'family_name': user.last_name,
             'given_name': user.first_name,
-            'preferred_username': user.username,
-            'sub': db_access_token.client.make_sub(user.username),
+            'preferred_username': settings.OPENID_SUB_PROVIDER(user, db_access_token.client),
+            'sub': settings.OPENID_SUB_PROVIDER(user, db_access_token.client),
             # 'middle_name' not set on django user,
             # 'nickname' not set on django user,
             # 'profile' not set on django user,
