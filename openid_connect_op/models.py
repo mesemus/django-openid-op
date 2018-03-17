@@ -102,7 +102,7 @@ class OpenIDClient(models.Model):
         # taken from User
         def setter(raw_password):
             self.set_client_secret(raw_password)
-            self.save(update_fields=["client_hashed_password"])
+            self.save(update_fields=["client_hashed_secret"])
 
         return check_password(raw_password, self.client_hashed_secret, setter)
 
