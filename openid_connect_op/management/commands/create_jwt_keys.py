@@ -33,4 +33,4 @@ class Command(BaseCommand):
                                                     })[0]
         client.jwks = json.dumps(json.loads(jwks.export(private_keys=True)), indent=True)
         client.save()
-        print(client.jwks)
+        # print(client.jwks)

@@ -52,7 +52,7 @@ def extract_access_token(request, forbidden_on_not_present):
                 return HttpResponseForbidden('Expired access token')
             return db_access_token
         except OpenIDToken.DoesNotExist:
-            return HttpResponseForbidden('Provided access token not found')
+            return HttpResponseForbidden('Provided access token %s not found' % access_token)
     except BaseException as e:
         return HttpResponseForbidden('Access error: %s' % e)
 
