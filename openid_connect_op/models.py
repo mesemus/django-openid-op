@@ -1,14 +1,11 @@
 import datetime
 import hashlib
 import logging
-
 import re
-from django.conf import settings
-from django.db.models import Count, Sum
+
+from django.db.models import Sum
 from jsonfield.fields import JSONField
 from jwcrypto.jwk import JWKSet
-
-from openid_connect_op.utils.crypto import CryptoTools
 
 try:
     import secrets
