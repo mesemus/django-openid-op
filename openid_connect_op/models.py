@@ -70,7 +70,7 @@ class OpenIDClient(models.Model):
                                             'all claims from allowed scopes are returned')
 
     sub_hash = models.CharField(max_length=256, null=True, blank=True,
-                                verbose_name="If set, <<sub>> values (that is, username) will be concatenated with this value and sha256")
+                                verbose_name="If set, &lt;&lt;sub&gt;&gt; values (that is, username) will be concatenated with this value and sha256")
 
     client_registration_data = JSONField(default={})
 

@@ -12,7 +12,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from openid_connect_op.models import OpenIDClient, OpenIDToken
-from openid_connect_op.signals import before_user_consent
+from openid_connect_op.signals import before_user_consent, authorization_request_start, authorization_request_finish
 from openid_connect_op.views.parameters import AuthenticationParameters
 from . import OAuthRequestMixin
 from .errors import OAuthError
@@ -24,6 +24,8 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
     def dispatch(self, request, *args, **kwargs):
         if request.method not in ('GET', 'POST'):
             return HttpResponseBadRequest('Only GET or POST are supported on OpenID endpoint')
+
+        authorization_request_start.send('auth', request=request)
 
         try:
             resp = self.unpack_auth_parameters(request)
@@ -57,6 +59,8 @@ class AuthenticationRequestView(OAuthRequestMixin, View):
                                              token_data=self.request_parameters.to_dict(),
                                              ttl=getattr(settings, 'OPENID_AUTH_TOKEN_TTL', 20),
                                              user=request.user)
+                authorization_request_finish.send('auth', request=request,
+                                                  openid_client=client, token=auth_token)
                 return self.oauth_send_answer(request, {
                     'code': auth_token
                 })

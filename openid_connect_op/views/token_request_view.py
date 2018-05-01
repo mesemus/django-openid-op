@@ -11,6 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from ratelimit.mixins import RatelimitMixin
 
 from openid_connect_op.models import OpenIDClient
+from openid_connect_op.signals import access_token_start, access_token_finish
 from openid_connect_op.utils.jwt import JWTTools
 from . import OAuthRequestMixin
 from .errors import OAuthError
@@ -70,7 +71,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
                 })
 
     def process_authorization_code_grant_type(self, request, client):
-
+        access_token_start.send('auth', request=request, openid_client=client)
         if not self.request_parameters.code:
             raise OAuthError(error='invalid_request',
                              error_description='Required parameter with name "code" is not present')
@@ -137,6 +138,8 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
             root_db_token=db_access_token
         )
         id_token = self.create_id_token(request, client, authentication_parameters, db_access_token, user)
+        access_token_finish.send('auth', request=request, openid_client=client, access_token=access_token,
+                                 refresh_token=refresh_token, id_token=id_token)
         return self.oauth_send_answer(request, {
             'access_token': access_token,
             'token_type': 'Bearer',

@@ -7,6 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from ratelimit.mixins import RatelimitMixin
 
 from openid_connect_op.decorators import access_token_required
+from openid_connect_op.signals import before_userinfo_token
 
 
 class UserInfoView(RatelimitMixin, View):
@@ -28,4 +29,9 @@ class UserInfoView(RatelimitMixin, View):
 
         claim_values = settings.OPENID_USERINFO_PROVIDERS.get_claims(request.openid_access_token,
                                                                      scopes, claims)
+        before_userinfo_token.send('userinfo',
+                                   openid_client=request.openid_access_token.client,
+                                   userinfo_token=claim_values,
+                                   user=request.openid_access_token.user)
+
         return JsonResponse(claim_values)
