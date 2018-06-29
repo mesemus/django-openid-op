@@ -246,10 +246,10 @@ class OpenIDAgreement(models.Model):
     text = models.TextField()
     obligatory = models.BooleanField()
 
-    allowed_scopes = JSONField(null=True, blank=True,
+    allowed_scopes = JSONField(default=[],
                                verbose_name='List of allowed scopes for this agreement.')
 
-    allowed_claims = JSONField(null=True, blank=True,
+    allowed_claims = JSONField(default=[],
                                verbose_name='List of allowed claims for this agreement')
 
     username_auto_agreement_regexp = models.CharField(null=True, blank=True, max_length=256,
