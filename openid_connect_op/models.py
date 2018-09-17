@@ -332,3 +332,6 @@ class OpenIDToken(models.Model):
             root_token=root_db_token)
 
         return token, db_token
+
+    def __str__(self):
+        return '%s/%s/%s' % (self.client.client_code, self.user, self.expiration)
