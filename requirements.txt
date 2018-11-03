@@ -3,6 +3,6 @@ pycryptodomex>=2.6.1
 django-jsonfield
 django-ratelimit
 python-jwt
-django-modeltranslation
+django-modeltranslation>=0.13-beta1
 django-bleach
 requests

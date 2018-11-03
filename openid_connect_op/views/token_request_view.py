@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import traceback
 
 from django.conf import settings
@@ -8,6 +9,7 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
+from jwcrypto.jwa import JWA
 from ratelimit.mixins import RatelimitMixin
 
 from openid_connect_op.models import OpenIDClient
@@ -137,7 +139,8 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
             user,
             root_db_token=db_access_token
         )
-        id_token = self.create_id_token(request, client, authentication_parameters, db_access_token, user)
+        id_token = self.create_id_token(request, client, authentication_parameters, db_access_token, user,
+                                        access_token=access_token)
         access_token_finish.send('auth', request=request, openid_client=client, access_token=access_token,
                                  refresh_token=refresh_token, id_token=id_token)
         return self.oauth_send_answer(request, {
@@ -234,7 +237,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         else:
             raise OAuthError(error='invalid_request',
                              error_description='The assertion token is for audience %s, I am %s' % (
-                             payload['aud'], auri))
+                                 payload['aud'], auri))
 
         client = OpenIDClient.objects.filter(client_id=payload['iss']).first()
         if not client:
@@ -265,7 +268,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
             pass
 
     @staticmethod
-    def create_id_token(request, client, authentication_parameters, db_access_token, user):
+    def create_id_token(request, client, authentication_parameters, db_access_token, user, access_token=None):
 
         id_token = {
             "iss": request.build_absolute_uri('/'),
@@ -288,6 +291,9 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         if authentication_parameters.nonce:
             id_token['nonce'] = authentication_parameters.nonce
 
+        if access_token:
+            id_token['at_hash'] = make_access_token_hash(access_token)
+
         token = JWTTools.generate_jwt(id_token)
 
         # save the token to the database
@@ -296,3 +302,9 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         }, db_access_token.expiration, user, db_access_token, token=token)
 
         return token
+
+
+def make_access_token_hash(access_token):
+    h = hashlib.sha256(access_token.encode('ascii')).digest()
+    h = base64.urlsafe_b64encode(h[:(128 // 8)]).decode('ascii')
+    return h

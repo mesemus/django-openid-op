@@ -21,7 +21,7 @@ For more details see https://github.com/mesemus/django-openid-op
 
 setup(
     name='django-openid-op',
-    version='0.2.5',
+    version='0.3.0',
     packages=find_packages(exclude='tests'),
     include_package_data=True,
     description='A django database based implementation of a subset of openid protocol, targeted at python3.6 and django 1.11+',
@@ -55,7 +55,7 @@ setup(
         'django-jsonfield',
         'django-ratelimit',
         'python-jwt',
-        'django-modeltranslation',
+        'django-modeltranslation>=0.13-beta1',
         'django-bleach',
         'requests'
     ],
@@ -67,6 +67,7 @@ setup(
         'pytest-runner',
         'pytest-env',
         'social-auth-app-django',
+        'django-modeltranslation>=0.13-beta1',
         'pyjwkest'
     ],
     extras_require={
