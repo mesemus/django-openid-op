@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from jwcrypto.jwa import JWA
+from jwcrypto.common import base64url_encode
 from ratelimit.mixins import RatelimitMixin
 
 from openid_connect_op.models import OpenIDClient
@@ -306,5 +306,5 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
 
 def make_access_token_hash(access_token):
     h = hashlib.sha256(access_token.encode('ascii')).digest()
-    h = base64.urlsafe_b64encode(h[:(128 // 8)]).decode('ascii')
+    h = base64url_encode(h[:(128 // 8)])
     return h
