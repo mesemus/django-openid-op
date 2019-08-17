@@ -72,7 +72,7 @@ class OpenIDClient(models.Model):
     sub_hash = models.CharField(max_length=256, null=True, blank=True,
                                 verbose_name="If set, &lt;&lt;sub&gt;&gt; values (that is, username) will be concatenated with this value and sha256")
 
-    client_registration_data = JSONField(default={})
+    client_registration_data = JSONField(default=dict)
 
     jwks = models.TextField(default='{}')
 
@@ -246,10 +246,10 @@ class OpenIDAgreement(models.Model):
     text = models.TextField()
     obligatory = models.BooleanField()
 
-    allowed_scopes = JSONField(default=[],
+    allowed_scopes = JSONField(default=list,
                                verbose_name='List of allowed scopes for this agreement.')
 
-    allowed_claims = JSONField(default=[],
+    allowed_claims = JSONField(default=list,
                                verbose_name='List of allowed claims for this agreement')
 
     username_auto_agreement_regexp = models.CharField(null=True, blank=True, max_length=256,
@@ -276,7 +276,7 @@ class OpenIDToken(models.Model):
     client = models.ForeignKey(OpenIDClient, on_delete=models.CASCADE)
     token_hash = models.CharField(max_length=64, unique=True)
     token_type = models.CharField(max_length=4)
-    token_data = jsonfield.JSONField(default={})
+    token_data = jsonfield.JSONField(default=dict)
     expiration = models.DateTimeField()
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     root_token = models.ForeignKey('openid_connect_op.OpenIDToken', related_name='related_tokens',
@@ -303,6 +303,7 @@ class OpenIDToken(models.Model):
     TOKEN_TYPE_ID_TOKEN = 'ID'
     TOKEN_TYPE_CLIENT_DYNAMIC_REGISTRATION = 'CDR'
     TOKEN_TYPE_CLIENT_CONFIGURATION_TOKEN = 'CCF'
+    TOKEN_TYPE_DELEGATE = 'DLGT'
 
     INFINITE_TTL = 99999999999
 
