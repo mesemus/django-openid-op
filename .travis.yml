@@ -3,8 +3,7 @@ python:
   - "3.5"
   - "3.6"
 env:
-  - DJANGO_VERSION=django111
-# django-modeltranslation does not work yet with django 2
+  - DJANGO_VERSION=django2
 #  - DJANGO_VERSION=djangomaster
 install: pip install tox-travis
 script: tox -e $DJANGO_VERSION
