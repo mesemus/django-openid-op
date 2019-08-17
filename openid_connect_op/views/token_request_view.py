@@ -1,7 +1,6 @@
 import base64
 import hashlib
 import traceback
-
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import HttpResponseBadRequest
@@ -22,6 +21,7 @@ from ..models import OpenIDToken
 
 
 # section 4.1.3 of OAUTH 2.0
+# https://tools.ietf.org/pdf/draft-hunt-oauth-chain-01.pdf
 class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
     ratelimit_key = 'ip'
     ratelimit_rate = '10/m'
@@ -44,12 +44,14 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
             except AttributeError as e:
                 raise OAuthError(error=self.attribute_parsing_error, error_description=str(e))
 
-            client = self.authenticate_client(request)
+            client, user, token = self.authenticate_client(request)
 
             if self.request_parameters.grant_type == {'authorization_code'}:
                 return self.process_authorization_code_grant_type(request, client)
             elif self.request_parameters.grant_type == {'refresh_token'}:
                 return self.process_refresh_token(request, client)
+            elif self.request_parameters.grant_type == {'http://oauth.net/grant_type/chain'}:
+                return self.process_chain_token(request, client, user, token)
             else:
                 raise OAuthError(error='invalid_request',
                                  error_description='Invalid grant type %s' % self.request_parameters.grant_type)
@@ -81,7 +83,7 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         authorization_token = OpenIDToken.objects.filter(
             token_hash=OpenIDToken.get_token_hash(self.request_parameters.code),
             client=client,
-            token_type=OpenIDToken.TOKEN_TYPE_AUTH).first()
+            token_type__in=(OpenIDToken.TOKEN_TYPE_AUTH, OpenIDToken.TOKEN_TYPE_DELEGATE)).first()
 
         if not authorization_token:
             raise OAuthError(error='unauthorized_client',
@@ -96,9 +98,12 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         # prevent reusing
         authorization_token.delete()
 
-        self.validate_redirect_uri(authentication_parameters)
+        delegated = authorization_token.token_type == OpenIDToken.TOKEN_TYPE_DELEGATE
 
-        return self.generate_tokens_and_oauth_response(authentication_parameters, client, request)
+        if not delegated:
+            self.validate_redirect_uri(authentication_parameters)
+
+        return self.generate_tokens_and_oauth_response(authentication_parameters, client, request, delegated)
 
     def process_refresh_token(self, request, client):
         if not self.request_parameters.refresh_token:
@@ -119,7 +124,37 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         # noinspection PyTypeChecker
         return self.generate_tokens_and_oauth_response(authentication_parameters, client, request)
 
-    def generate_tokens_and_oauth_response(self, authentication_parameters, client, request):
+    def process_chain_token(self, request, client, user, access_token):
+        try:
+            target_client = OpenIDClient.objects.get(client_code=self.request_parameters.client_id)
+        except OpenIDClient.DoesNotExist:
+            raise OAuthError(error='invalid_request',
+                             error_description='Requested client id not found')
+
+        def ld(param, default):
+            return request.POST.get(param, request.GET.get(param, default))
+
+        token_data = {
+            'username': user.username,
+            'scope': [x.strip() for x in ld('scope', 'openid').split(',')],
+            'claims': [x.strip() for x in ld('claims', '').split(',')],
+            'nonce': ld('nonce', None)
+        }
+        if not token_data['nonce']:
+            token_data['nonce'] = hashlib.sha256(
+                target_client.client_id.encode('utf-8')).hexdigest()
+
+        chain_token, chain_db_token = OpenIDToken.create_token(
+            target_client, OpenIDToken.TOKEN_TYPE_DELEGATE, token_data, 10000,
+            user, root_db_token=access_token)
+        return self.oauth_send_answer(request, {
+            'token': chain_token,
+            'token_type': 'delegate',
+            'expires': chain_db_token.expiration.isoformat(),
+        })
+
+    def generate_tokens_and_oauth_response(self, authentication_parameters, client,
+                                           request, delegated=False):
         access_token_ttl = getattr(settings, 'OPENID_DEFAULT_ACCESS_TOKEN_TTL', 3600)
         refresh_token_ttl = getattr(settings, 'OPENID_DEFAULT_REFRESH_TOKEN_TTL', 3600 * 10)
         user = User.objects.get(username=authentication_parameters.username)
@@ -131,25 +166,30 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
             access_token_ttl,
             user,
         )
-        refresh_token, refresh_db_token = OpenIDToken.create_token(
-            client,
-            OpenIDToken.TOKEN_TYPE_REFRESH_TOKEN,
-            {},
-            refresh_token_ttl,
-            user,
-            root_db_token=db_access_token
-        )
+        if not delegated:
+            refresh_token, refresh_db_token = OpenIDToken.create_token(
+                client,
+                OpenIDToken.TOKEN_TYPE_REFRESH_TOKEN,
+                {},
+                refresh_token_ttl,
+                user,
+                root_db_token=db_access_token
+            )
+        else:
+            refresh_token = None
         id_token = self.create_id_token(request, client, authentication_parameters, db_access_token, user,
                                         access_token=access_token)
         access_token_finish.send('auth', request=request, openid_client=client, access_token=access_token,
                                  refresh_token=refresh_token, id_token=id_token)
-        return self.oauth_send_answer(request, {
+        ret = {
             'access_token': access_token,
             'token_type': 'Bearer',
-            'refresh_token': refresh_token,
             'expires_in': access_token_ttl,
             'id_token': id_token
-        })
+        }
+        if refresh_token:
+            ret['refresh_token'] = refresh_token
+        return self.oauth_send_answer(request, ret)
 
     def validate_redirect_uri(self, authentication_parameters):
         auth_redirect_uri = authentication_parameters.redirect_uri
@@ -163,19 +203,25 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
 
     def authenticate_client(self, request):
         auth_header = request.META.get('HTTP_AUTHORIZATION')
-        if auth_header and auth_header.startswith('Basic '):
-            return self.authenticate_with_http_basic(auth_header)
+        if auth_header:
+            if auth_header.startswith('Basic '):
+                # only client is authenticated
+                return self.authenticate_with_http_basic(auth_header), None, None
+            if auth_header.startswith('Bearer '):
+                client, user, token = self.authenticate_with_bearer(auth_header)
+                if client:
+                    return client, user, token
         if self.request_parameters.client_assertion_type == 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer':
             if not self.request_parameters.client_assertion:
                 raise OAuthError(error='unsupported_authentication_method',
                                  error_description='Need client_assertion if client_assertion_type is jwt-bearer')
-            return self.authenticate_with_jwt_bearer()
+            return self.authenticate_with_jwt_bearer(), None, None
         if self.request_parameters.client_secret:
-            return self.authenticate_with_client_secret()
+            return self.authenticate_with_client_secret(), None, None
         if self.request_parameters.client_id:
             client = self.try_null_authentication()
             if client:
-                return client
+                return client, None, None
         raise OAuthError(error='unsupported_authentication_method',
                          error_description='Only HTTP Basic auth or client_secret is supported')
 
@@ -197,6 +243,16 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
 
         except OpenIDClient.DoesNotExist:
             raise OAuthError(error='unauthorized_client', error_description='Bad username or password')
+
+    def authenticate_with_bearer(self, auth_header):
+        bearer_token = auth_header[7:].strip()
+        token = OpenIDToken.objects.filter(
+            token_hash=OpenIDToken.get_token_hash(bearer_token),
+            expiration__gte=timezone.now()
+        ).first()
+        if not token:
+            return None, None, None
+        return token.client, token.user, token
 
     def authenticate_with_client_secret(self):
         if not self.request_parameters.client_id:

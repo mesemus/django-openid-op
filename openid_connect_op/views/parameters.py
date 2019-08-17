@@ -4,7 +4,8 @@ from openid_connect_op.utils.params import Parameters, ParameterType
 class AuthenticationParameters(Parameters):
     parameter_definitions = (
         ('redirect_uri', Parameters.REQUIRED),
-        ('response_type', ParameterType(required=True, container_type=set, allowed_values={'code', 'token', 'id_token'})),
+        ('response_type',
+         ParameterType(required=True, container_type=set, allowed_values={'code', 'token', 'id_token'})),
         ('client_id', Parameters.REQUIRED),
         ('scope', ParameterType(required=True, container_type=set)),
 
@@ -21,7 +22,7 @@ class AuthenticationParameters(Parameters):
         # 'display', ParameterType(required=False, container_type=set,
         #                          allowed_values={'page', 'popup', 'touch', 'wap'}),
         ('prompt', ParameterType(required=False, container_type=set,
-                                allowed_values={'none', 'login', 'consent', 'select_account'})),
+                                 allowed_values={'none', 'login', 'consent', 'select_account'})),
         # currently not used at all
         # 'ui_locales', ParameterType(required=False, container_type=list),
         # 'acr_values', ParameterType(required=False, container_type=list),
@@ -36,10 +37,12 @@ class AuthenticationParameters(Parameters):
 
 class TokenParameters(Parameters):
     parameter_definitions = (
-        ('grant_type', ParameterType(required=True, container_type=set,
-                                    allowed_values={'authorization_code', 'refresh_token'})),
+        ('grant_type', ParameterType(
+            required=True, container_type=set,
+            allowed_values={'authorization_code', 'refresh_token',
+                            'http://oauth.net/grant_type/chain'})),
         # authorization_code
-        ('code', Parameters.OPTIONAL), # required for authorization_code
+        ('code', Parameters.OPTIONAL),  # required for authorization_code
         ('redirect_uri', Parameters.OPTIONAL),
 
         # common for POST credentials instead of basic auth
@@ -59,17 +62,17 @@ class DynamicClientRegistrationParameters(Parameters):
     parameter_definitions = (
         ('redirect_uris', ParameterType(required=True, container_type=list)),
         ('response_types', ParameterType(required=False, container_type=set,
-                                    allowed_values={'code', 'token', 'id_token'})),
+                                         allowed_values={'code', 'token', 'id_token'})),
         ('grant_types', ParameterType(required=False, container_type=set,
-                                    allowed_values={'authorization_code', 'implicit', 'refresh_token'})),
+                                      allowed_values={'authorization_code', 'implicit', 'refresh_token'})),
         ('application_type', ParameterType(required=False, container_type=set,
-                                    allowed_values={'web', 'native'})),
+                                           allowed_values={'web', 'native'})),
         ('contacts', ParameterType(required=False, container_type=set)),
         ('client_name', Parameters.OPTIONAL),
         ('logo_uri', Parameters.OPTIONAL),
         ('client_uri', Parameters.OPTIONAL),
         ('policy_uri', Parameters.OPTIONAL),
-        ('tos_uri', Parameters.OPTIONAL),         # terms of service
+        ('tos_uri', Parameters.OPTIONAL),  # terms of service
         ('jwks_uri', Parameters.OPTIONAL),
         ('jwks', Parameters.OPTIONAL),
         ('sector_identifier_uri', Parameters.OPTIONAL),
