@@ -187,7 +187,8 @@ class TestTokenRequest:
         data = json.loads(resp.content.decode('utf-8'))
         assert data == {'error': 'invalid_request',
                         'error_description': 'Value "bad" is not allowed for parameter grant_type. '
-                                             'Allowed values are "authorization_code", "refresh_token"'}
+                                             'Allowed values are "authorization_code", '
+                                             '"http://oauth.net/grant_type/chain", "refresh_token"'}
 
     def test_bad_code(self, client, client_config, user):
         self.get_authorization_code(client, client_config, user)
