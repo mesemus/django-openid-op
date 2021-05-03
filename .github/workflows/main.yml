@@ -9,7 +9,6 @@ jobs:
     strategy:
       matrix:
         python-version: [ 3.8, 3.9 ]
-        SQLALCHEMY_DATABASE_URI: ["sqlite:///:memory:", "postgresql://postgres:postgres@postgres/ci-test"]
 
     steps:
       - uses: actions/checkout@v2
