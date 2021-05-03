@@ -9,7 +9,6 @@ jobs:
     strategy:
       matrix:
         python-version: [ 3.8, 3.9 ]
-        django_version: [ "django2", "django3" ]
 
     steps:
       - uses: actions/checkout@v2
@@ -23,7 +22,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox
       - name: Test with tox
-        run: tox -e py -e ${{ matrix.django_version }}
+        run: tox -e py
 
       - name: Build package to publish
         run: |
