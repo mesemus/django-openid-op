@@ -350,6 +350,13 @@ class TokenRequestView(OAuthRequestMixin, RatelimitMixin, View):
         if access_token:
             id_token['at_hash'] = make_access_token_hash(access_token)
 
+        if client.userinfo_in_id_token:
+            id_token.update({
+                'email': user.email,
+                'family_name': user.last_name,
+                'given_name': user.first_name
+            })
+
         token = JWTTools.generate_jwt(id_token)
 
         # save the token to the database

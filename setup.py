@@ -50,7 +50,7 @@ setup(
     ],
 
     install_requires=[
-        'Django>=2<3',
+        'Django',
         'pycryptodomex',
         'django-jsonfield',
         'django-ratelimit',

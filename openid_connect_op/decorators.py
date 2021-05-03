@@ -4,7 +4,6 @@ from functools import wraps
 from django.conf import settings
 from django.http.response import HttpResponseForbidden
 from django.utils import timezone
-from django.utils.decorators import available_attrs
 
 from openid_connect_op.models import OpenIDToken
 
@@ -63,7 +62,8 @@ def access_token_required(disabled_settings=None):
         Check that access token is present on the request and is valid. If not, returns HttpResponseForbidden.
         request is annotated with the database access token, i.e. isinstance(req.openid_access_token, OpenIDToken) == True
         """
-        @wraps(func, assigned=available_attrs(func))
+
+        @wraps(func)
         def inner(request, *args, **kwargs):
             if disabled_settings:
                 if getattr(settings, disabled_settings, False):
@@ -74,7 +74,10 @@ def access_token_required(disabled_settings=None):
                 return db_access_token
             request.openid_access_token = db_access_token
             return func(request, *args, **kwargs)
+
         return inner
+
     return wrapper
 
-__all__ = ('access_token_required', )
+
+__all__ = ('access_token_required',)

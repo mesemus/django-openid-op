@@ -72,6 +72,8 @@ class OpenIDClient(models.Model):
     sub_hash = models.CharField(max_length=256, null=True, blank=True,
                                 verbose_name="If set, &lt;&lt;sub&gt;&gt; values (that is, username) will be concatenated with this value and sha256")
 
+    userinfo_in_id_token = models.BooleanField(default=False)
+
     client_registration_data = JSONField(default=dict)
 
     jwks = models.TextField(default='{}')
